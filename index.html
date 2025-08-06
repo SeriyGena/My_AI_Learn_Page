@@ -78,7 +78,7 @@
                 const userIdDisplayElement = document.getElementById('user-id-display');
                 const authControlsLeftElement = document.getElementById('auth-controls-left');
                 const authControlsRightElement = document.getElementById('auth-controls-right');
-
+                const loadingIndicator = document.getElementById('loading-indicator'); // Get loading indicator here
 
                 if (user) {
                     console.log("User signed in:", user.uid);
@@ -169,8 +169,7 @@
                         });
                     }
                 }
-                // Hide loading indicator once authentication state is determined and initial data loaded
-                const loadingIndicator = document.getElementById('loading-indicator');
+                // Always hide loading indicator after auth state is determined and data is processed
                 if (loadingIndicator) {
                     loadingIndicator.style.display = 'none';
                 }
@@ -180,6 +179,7 @@
             const userIdDisplayElement = document.getElementById('user-id-display');
             const authControlsLeftElement = document.getElementById('auth-controls-left');
             const authControlsRightElement = document.getElementById('auth-controls-right');
+            const loadingIndicator = document.getElementById('loading-indicator'); // Get loading indicator here
 
             if (authStatusElement) {
                 authStatusElement.textContent = 'Firebase Not Configured / Connection Failed';
@@ -197,8 +197,7 @@
             if (authControlsRightElement) {
                 authControlsRightElement.innerHTML = ''; // Clear right controls if Firebase failed
             }
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
+            if (loadingIndicator) { // Ensure loading indicator is hidden even if Firebase fails
                 loadingIndicator.style.display = 'none';
             }
         }
