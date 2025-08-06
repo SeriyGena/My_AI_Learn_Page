@@ -484,7 +484,7 @@
                 targetElement.innerHTML = htmlContent;
             } catch (error) {
                 console.error(`Could not load ${filename}:`, error);
-                targetElement.innerHTML = `<p class="text-red-500 text-center">Failed to load content from ${filename}. Please ensure the file exists and is accessible in your GitHub repository's root directory or the 'content/' subfolder.</p>`;
+                targetElement.innerHTML = `<p class="text-red-500 text-center">Failed to load content from ${filename}. Please ensure the file exists and is accessible in your GitHub repository's 'content/' subfolder.</p>`;
             }
         }
 
@@ -564,8 +564,7 @@
                 attachModuleListeners();
             } else if (target === 'info') {
                 attachInfoSubNavListeners();
-                // Load tools.html by default when Info tab is clicked
-                // Now using the imported toolsData to render the content directly
+                // Load tools content by default when Info tab is clicked
                 renderToolsContent();
             }
         }
@@ -575,6 +574,12 @@
             const targetElement = document.getElementById('info-sub-content');
             if (!targetElement) {
                 console.error("Target element for tools content not found.");
+                return;
+            }
+            // Check if toolsData is available and not empty
+            if (typeof toolsData === 'undefined' || Object.keys(toolsData).length === 0) {
+                targetElement.innerHTML = `<p class="text-red-500 text-center">Tools data not loaded. Please ensure 'content/tools_data.js' exists and is correctly formatted with 'export const toolsData = ...'.</p>`;
+                console.error("toolsData is undefined or empty. Check content/tools_data.js import.");
                 return;
             }
             let toolsHtml = `
@@ -602,6 +607,12 @@
             const targetElement = document.getElementById('info-sub-content');
             if (!targetElement) {
                 console.error("Target element for resources content not found.");
+                return;
+            }
+            // Check if resourcesData is available and not empty
+            if (typeof resourcesData === 'undefined' || resourcesData.length === 0) {
+                targetElement.innerHTML = `<p class="text-red-500 text-center">Resources data not loaded. Please ensure 'content/resources_data.js' exists and is correctly formatted with 'export const resourcesData = ...'.</p>`;
+                console.error("resourcesData is undefined or empty. Check content/resources_data.js import.");
                 return;
             }
             let resourcesHtml = `
