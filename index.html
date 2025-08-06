@@ -12,24 +12,15 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Removed direct import of toolsData and resourcesData as we will load their HTML directly
-        // import { toolsData } from './content/tools_data.js';
-        // import { resourcesData } from './content/resources_data.js';
+        // Use environment variables provided by the Canvas environment, with a fallback for local development.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" }; // Placeholder for local dev
 
-        // Your web app's Firebase configuration (obtained from Firebase Project Settings)
-        // This configuration is hardcoded here for deployment on GitHub Pages.
-        const firebaseConfig = {
-            apiKey: "AIzaSyB7oxoQua0Wgqzl2IbwL1Uzx-N7hcAnuLw",
-            authDomain: "ai-skills-for-non-coder-engs.firebaseapp.com",
-            projectId: "ai-skills-for-non-coder-engs",
-            storageBucket: "ai-skills-for-non-coder-engs.firebaseApp.com",
-            messagingSenderId: "1026548286381",
-            appId: "1:1026548286381:web:706b379a6ac131dfb2d724",
-            measurementId: "G-6QL2CKNTX6" // Measurement ID is optional for basic Firebase usage
-        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // Initialize Firebase
         let app, db, auth;
@@ -37,14 +28,11 @@
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-            // Export Firebase instances and Firestore functions for use in global scope
-            window.firebaseApp = app;
+            
+            // Make Firebase services available globally
             window.firestoreDb = db;
             window.firebaseAuth = auth;
-            window.currentAppId = firebaseConfig.appId; // Use appId from your specific configuration
-            window.initialAuthToken = null; // Not needed for GitHub Pages, as we're doing anonymous sign-in directly
-
-            // Export Firestore functions globally
+            window.currentAppId = appId;
             window.doc = doc;
             window.setDoc = setDoc;
             window.getDoc = getDoc;
@@ -53,23 +41,11 @@
             window.signInWithEmailAndPassword = signInWithEmailAndPassword;
             window.signOut = signOut;
 
+
         } catch (e) {
             console.error("Firebase initialization failed:", e);
-            // If Firebase fails to initialize, ensure global variables are null to prevent further errors
-            window.firebaseApp = null;
-            window.firestoreDb = null;
-            window.firebaseAuth = null;
-            window.currentAppId = null;
-            window.initialAuthToken = null;
-            window.doc = null;
-            window.setDoc = null;
-            window.getDoc = null;
-            window.onSnapshot = null;
-            window.createUserWithEmailAndPassword = null;
-            window.signInWithEmailAndPassword = null;
-            window.signOut = null;
+            document.body.innerHTML = '<div class="h-screen flex items-center justify-center text-red-500">Firebase initialization failed. Please check your configuration.</div>';
         }
-
 
         // Authentication and data loading
         if (auth) { // Only run if auth was successfully initialized
@@ -78,7 +54,7 @@
                 const userIdDisplayElement = document.getElementById('user-id-display');
                 const authControlsLeftElement = document.getElementById('auth-controls-left');
                 const authControlsRightElement = document.getElementById('auth-controls-right');
-
+                const loadingIndicator = document.getElementById('loading-indicator');
 
                 if (user) {
                     console.log("User signed in:", user.uid);
@@ -89,7 +65,8 @@
                         authStatusElement.classList.add('text-green-600');
                     }
                     if (userIdDisplayElement) {
-                        userIdDisplayElement.textContent = `Your User ID: ${user.uid}`; // Display full user ID
+                        // The user ID is no longer displayed on the UI.
+                        userIdDisplayElement.textContent = `Your User ID: ${user.uid}`; // Keep the text content for debugging if needed
                     }
                     if (authControlsRightElement) {
                         authControlsRightElement.innerHTML = `
@@ -99,8 +76,7 @@
                             try {
                                 await window.signOut(window.firebaseAuth);
                                 console.log("User logged out.");
-                                // Optionally, clear local progress if desired after logout
-                                completedTasks = new Set();
+                                window.completedTasks = new Set();
                                 updateTaskCheckboxes();
                                 window.updateProgressChart();
                             } catch (error) {
@@ -114,8 +90,9 @@
                     // Load completed tasks from Firestore after authentication
                     await window.loadCompletedTasks();
                     window.updateProgressChart(); // Update chart after tasks are loaded
+                    window.setupFirestoreListener();
                 } else {
-                    console.log("No user signed in. Attempting anonymous sign-in.");
+                    console.log("No user signed in.");
                     if (authStatusElement) {
                         authStatusElement.textContent = 'Not Signed In';
                         authStatusElement.classList.remove('text-green-600');
@@ -139,7 +116,12 @@
                                 console.log("User logged in with email:", email);
                             } catch (error) {
                                 console.error("Login error:", error);
-                                authStatusElement.textContent = `Login Error: ${error.message}`;
+                                authStatusElement.classList.add('text-red-500', 'font-bold');
+                                if (error.code === 'auth/operation-not-allowed') {
+                                    authStatusElement.innerHTML = 'Error: Email/Password sign-in must be enabled in the Firebase console.';
+                                } else {
+                                    authStatusElement.textContent = `Login Error: ${error.message}`;
+                                }
                             }
                         });
                         document.getElementById('signup-button').addEventListener('click', async () => {
@@ -150,7 +132,12 @@
                                 console.log("User signed up with email:", email);
                             } catch (error) {
                                 console.error("Signup error:", error);
-                                authStatusElement.textContent = `Signup Error: ${error.message}`;
+                                authStatusElement.classList.add('text-red-500', 'font-bold');
+                                if (error.code === 'auth/operation-not-allowed') {
+                                    authStatusElement.innerHTML = 'Error: Email/Password sign-up must be enabled in the Firebase console.';
+                                } else {
+                                    authStatusElement.textContent = `Signup Error: ${error.message}`;
+                                }
                             }
                         });
                     }
@@ -164,106 +151,44 @@
                                 console.log("Continued anonymously.");
                             } catch (error) {
                                 console.error("Anonymous login error:", error);
-                                authStatusElement.textContent = `Anonymous Login Error: ${error.message}`;
+                                authStatusElement.classList.add('text-red-500', 'font-bold');
+                                if (error.code === 'auth/operation-not-allowed') {
+                                    authStatusElement.innerHTML = 'Error: Anonymous sign-in must be enabled in the Firebase console.';
+                                } else {
+                                    authStatusElement.textContent = `Anonymous Login Error: ${error.message}`;
+                                }
                             }
                         });
                     }
                 }
-                // Hide loading indicator once authentication state is determined and initial data loaded
-                const loadingIndicator = document.getElementById('loading-indicator');
+                // Hide loading indicator once authentication state is determined
                 if (loadingIndicator) {
                     loadingIndicator.style.display = 'none';
                 }
             });
         } else { // If auth initialization failed
-            const authStatusElement = document.getElementById('auth-status');
-            const userIdDisplayElement = document.getElementById('user-id-display');
-            const authControlsLeftElement = document.getElementById('auth-controls-left');
-            const authControlsRightElement = document.getElementById('auth-controls-right');
-
-            if (authStatusElement) {
-                authStatusElement.textContent = 'Firebase Not Configured / Connection Failed';
-                authStatusElement.classList.remove('text-green-600');
-                authStatusElement.classList.add('text-red-500');
-            }
-            if (userIdDisplayElement) {
-                userIdDisplayElement.textContent = 'Your User ID: Not Available';
-            }
-            if (authControlsLeftElement) {
-                authControlsLeftElement.innerHTML = `
-                    <p class="text-red-500 text-sm">Authentication features are unavailable due to Firebase configuration issues.</p>
-                `;
-            }
-            if (authControlsRightElement) {
-                authControlsRightElement.innerHTML = ''; // Clear right controls if Firebase failed
-            }
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'none';
-            }
+            document.getElementById('auth-status').textContent = 'Firebase Connection Failed';
+            document.getElementById('loading-indicator').style.display = 'none';
         }
     </script>
-
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8f9fa;
-        }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-            height: auto;
-            max-height: 400px;
-        }
-        .nav-link {
-            transition: all 0.3s ease;
-            border-bottom: 2px solid transparent;
-        }
-        .nav-link.active {
-            border-bottom-color: #3b82f6;
-            color: #3b82f6;
-        }
-        .sub-nav-link {
-            transition: all 0.3s ease;
-            border-bottom: 2px solid transparent;
-        }
-        .sub-nav-link.active {
-            border-bottom-color: #10b981; /* A different color for sub-nav active state */
-            color: #10b981;
-        }
-        .module-header {
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .module-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease-out;
-        }
-        .task-item input:checked + span {
-            text-decoration: line-through;
-            color: #9ca3af;
-        }
-        /* Initial styling for loading indicator */
-        #loading-indicator {
-            display: flex; /* Changed from none to flex for initial visibility */
-            justify-content: center;
-            align-items: center;
-            height: 100px;
-            font-size: 1.2em;
-            color: #3b82f6;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+        .chart-container { position: relative; width: 100%; max-width: 400px; margin: auto; height: auto; max-height: 400px; }
+        .nav-link { transition: all 0.3s ease; border-bottom: 2px solid transparent; }
+        .nav-link.active { border-bottom-color: #3b82f6; color: #3b82f6; }
+        .sub-nav-link { transition: all 0.3s ease; border-bottom: 2px solid transparent; }
+        .sub-nav-link.active { border-bottom-color: #10b981; color: #10b981; }
+        .module-header { cursor: pointer; transition: background-color 0.3s ease; }
+        .module-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; }
+        .task-item input:checked + span { text-decoration: line-through; color: #9ca3af; }
     </style>
 </head>
 <body class="text-gray-800">
 
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
-        <header class="relative mb-8 flex flex-col items-center">
+        <header class="relative mb-8 flex flex-col items-center pt-16 sm:pt-0">
             <!-- Top Left: Email/Password Login & Signup -->
-            <div class="absolute top-0 left-0 text-left p-2"> <!-- Added p-2 for some padding -->
+            <div class="absolute top-0 left-0 text-left p-2">
                 <div id="auth-controls-left" class="flex flex-col items-start space-y-1">
                     <!-- Email, Password, Login, Signup injected here by JS -->
                 </div>
@@ -271,7 +196,7 @@
 
             <!-- Top Right: Auth Status & Anonymous Login/Logout -->
             <div class="absolute top-0 right-0 text-right p-2 flex flex-col items-end">
-                <div id="auth-status" class="text-sm mt-0 font-medium">Loading authentication status...</div>
+                <div id="auth-status" class="text-sm mt-0 font-medium">Loading...</div>
                 <div id="user-id-display" class="text-xs text-gray-500 mt-0 hidden">Your User ID: N/A</div>
                 <div id="auth-controls-right" class="flex flex-col sm:flex-row items-end mt-1 space-y-1 sm:space-y-0 sm:space-x-1">
                     <!-- Anonymous login/logout button injected here by JS -->
@@ -291,7 +216,6 @@
             <button data-target="info" class="nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">💡 Info</button>
         </nav>
 
-        <!-- Moved loading indicator outside of main content area -->
         <div id="loading-indicator" class="flex justify-center items-center h-24 text-blue-600 text-lg font-medium">
             Loading course data...
         </div>
@@ -299,526 +223,203 @@
         <main id="content-area">
             <!-- Content will be injected here by JavaScript -->
         </main>
-
     </div>
 
     <script type="module">
-        // Ensure Firebase instances are available after initial script loads and authenticates
-        // This part runs after the initial Firebase setup in the head script
         const courseData = {
             modules: [
                 {
                     title: "Module 1: Python Fundamentals for AI & LLM",
-                    description: "Setting up the development environment and mastering key data manipulation libraries, which forms the foundation for all subsequent topics.",
-                    tasks: [
-                        "Set up Python development environment in VSCode",
-                        "Install JupyterLab for interactive work",
-                        "Master NumPy basics for numerical operations",
-                        "Learn Pandas for data manipulation and analysis"
-                    ]
+                    description: "Setting up the development environment and mastering key data manipulation libraries.",
+                    tasks: ["Set up Python environment in VSCode", "Master NumPy basics", "Learn Pandas for data manipulation"]
                 },
                 {
                     title: "Module 2: 3D Visualization and Interactive Models",
                     description: "Learn to create parametric 3D models and interactive visualizations for analyzing complex technical situations.",
-                    tasks: [
-                        "Create a parametric 3D model of a component using CadQuery",
-                        "Visualize the 3D model using PyVista or Open3D",
-                        "Create an interactive web application to control the model in Streamlit"
-                    ]
+                    tasks: ["Create a parametric 3D model of a component using CadQuery", "Visualize the 3D model using PyVista or Open3D", "Create an interactive web application to control the model in Streamlit"]
                 },
                 {
                     title: "Module 3: LLMs for Workflow Automation",
                     description: "Utilize the power of large language models to automate routine tasks: reports, documentation, and presentations.",
-                    tasks: [
-                        "Automatically generate an equipment status report",
-                        "Summarize extensive technical documentation using an LLM",
-                        "Generate content for a technical presentation"
-                    ]
+                    tasks: ["Automatically generate an equipment status report", "Summarize extensive technical documentation using an LLM", "Generate content for a technical presentation"]
                 },
                 {
                     title: "Module 4: Failure Classification and Budget Forecasting",
                     description: "Apply machine learning for predictive maintenance and financial planning.",
-                    tasks: [
-                        "Build a failure classification model using Scikit-learn",
-                        "Integrate the model into a monitoring system simulation",
-                        "Build a budget forecasting model based on time series data"
-                    ]
+                    tasks: ["Build a failure classification model using Scikit-learn", "Integrate the model into a monitoring system simulation", "Build a budget forecasting model based on time series data"]
                 },
                 {
                     title: "Module 5: AI Agents for Personal Use",
                     description: "Create personal AI agents for financial management and information tracking.",
-                    tasks: [
-                        "Create an AI agent for stock monitoring using yfinance",
-                        "Develop an agent for personal budget management (CSV/SQLite)",
-                        "Explore multi-agent architecture for complex tasks"
-                    ]
+                    tasks: ["Create an AI agent for stock monitoring using yfinance", "Develop an agent for personal budget management (CSV/SQLite)", "Explore multi-agent architecture for complex tasks"]
                 },
                 {
                     title: "Module 6: Using LLM APIs and Popular Services",
                     description: "Learn to integrate your applications with leading LLMs and popular web services to extend their functionality.",
-                    tasks: [
-                        "Write scripts to interact with OpenAI, Google Gemini, Anthropic APIs",
-                        "Write scripts to interact with Mistral and Meta Llama 3 APIs",
-                        "Complete 2-3 integration projects with APIs (e.g., OpenWeatherMap, YouTube, Notion)"
-                    ]
+                    tasks: ["Write scripts to interact with OpenAI, Google Gemini, Anthropic APIs", "Write scripts to interact with Mistral and Meta Llama 3 APIs", "Complete 2-3 integration projects with APIs (e.g., OpenWeatherMap, YouTube, Notion)"]
                 }
             ],
-            // Use imported data for tools and resources
             skills: {
-                labels: ['3D Visualization', 'Data Analysis', 'Machine Learning', 'LLM & Prompting', 'Agent Development', 'API Integration'],
+                labels: ['3D Viz', 'Data Analysis', 'ML', 'LLM', 'Agents', 'APIs'],
                 values: [8, 7, 9, 10, 9, 8]
-            },
-            // The tools and resources data are now NOT imported from separate JS files for dynamic rendering.
-            // They are loaded as static HTML files. Keeping these properties as empty objects/arrays
-            // to avoid errors if other parts of the code still reference them (though they shouldn't for rendering).
-            tools: {},
-            resources: {}
+            }
         };
 
         const contentArea = document.getElementById('content-area');
         const navLinks = document.querySelectorAll('.nav-link');
         let progressChart, skillsChart;
-        let completedTasks = new Set(); // Stores task IDs like "0-0", "0-1"
+        window.completedTasks = new Set();
 
-        // Firestore functions
+        // --- Firestore Data Functions ---
         window.saveCompletedTasks = async () => {
-            // Always update local state and UI first
-            updateTaskCheckboxes();
-            window.updateProgressChart();
-
-            if (!window.firestoreDb || !window.currentAppId || !window.currentUserId || !window.doc || !window.setDoc) {
-                console.warn("Firestore not fully initialized or user not authenticated. Progress will not be persisted.");
-                return; // Exit if Firestore is not ready for persistence
-            }
+            if (!window.firestoreDb || !window.currentUserId) return;
             try {
-                // Individual user progress path: artifacts/{appId}/users/{userId}/ai_course_progress
-                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress');
-                await window.setDoc(docRef, { tasks: Array.from(completedTasks) }, { merge: true });
-                console.log("Tasks saved to Firestore for user:", window.currentUserId);
+                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress', 'tasks');
+                await window.setDoc(docRef, { tasks: Array.from(window.completedTasks) });
             } catch (e) {
-                console.error("Error saving document to Firestore: ", e);
+                console.error("Error saving to Firestore: ", e);
             }
         };
 
         window.loadCompletedTasks = async () => {
-            if (!window.firestoreDb || !window.currentAppId || !window.currentUserId || !window.getDoc || !window.doc) {
-                console.warn("Firestore not fully initialized or user not authenticated. Cannot load persisted tasks.");
-                completedTasks = new Set(); // Ensure local state is clear if no persistence
-                updateTaskCheckboxes(); // Update UI based on local (empty) state
-                window.updateProgressChart(); // Update chart based on local (empty) state
-                return; // Exit if Firestore is not ready for loading
-            }
+            if (!window.firestoreDb || !window.currentUserId) return;
             try {
-                // Individual user progress path: artifacts/{appId}/users/{userId}/ai_course_progress
-                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress');
+                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress', 'tasks');
                 const docSnap = await window.getDoc(docRef);
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (data && Array.isArray(data.tasks)) {
-                        completedTasks = new Set(data.tasks);
-                        console.log("Tasks loaded from Firestore for user:", window.currentUserId, completedTasks);
-                        // Update UI after loading
-                        updateTaskCheckboxes();
-                    }
+                if (docSnap.exists() && docSnap.data().tasks) {
+                    window.completedTasks = new Set(docSnap.data().tasks);
                 } else {
-                    console.log("No saved progress found in Firestore for user:", window.currentUserId);
-                    completedTasks = new Set(); // Clear local tasks if no saved data
+                    window.completedTasks = new Set();
                 }
             } catch (e) {
-                console.error("Error loading document from Firestore: ", e);
-                completedTasks = new Set(); // Clear local tasks on error
-            } finally {
-                updateTaskCheckboxes(); // Always ensure UI is updated
-                window.updateProgressChart(); // Always ensure chart is updated
+                console.error("Error loading from Firestore: ", e);
+                window.completedTasks = new Set();
             }
+            updateTaskCheckboxes();
+            updateProgressChart();
         };
 
-        // Real-time listener for individual user progress
         window.setupFirestoreListener = () => {
-             if (!window.firestoreDb || !window.currentAppId || !window.currentUserId || !window.onSnapshot || !window.doc) {
-                console.warn("Firestore not fully initialized or user not authenticated. Cannot set up real-time listener.");
-                return; // Exit if Firestore is not ready for listener
-            }
-            // Individual user progress path: artifacts/{appId}/users/{userId}/ai_course_progress
-            const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress');
-            window.onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (data && Array.isArray(data.tasks)) {
-                        const newCompletedTasks = new Set(data.tasks);
-                        // Only update if there are actual changes to avoid infinite loops
-                        if (JSON.stringify(Array.from(completedTasks)) !== JSON.stringify(Array.from(newCompletedTasks))) {
-                            completedTasks = newCompletedTasks;
-                            console.log("Real-time update from Firestore for user:", window.currentUserId, completedTasks);
-                            updateTaskCheckboxes();
-                            updateProgressChart();
-                        }
+            if (!window.firestoreDb || !window.currentUserId) return;
+            const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress', 'tasks');
+            window.onSnapshot(docRef, (doc) => {
+                if (doc.exists() && doc.data().tasks) {
+                    const newTasks = new Set(doc.data().tasks);
+                    if (JSON.stringify([...newTasks]) !== JSON.stringify([...window.completedTasks])) {
+                        window.completedTasks = newTasks;
+                        console.log("Real-time update received.");
+                        updateTaskCheckboxes();
+                        updateProgressChart();
                     }
-                } else {
-                    console.log("Document does not exist in real-time listener for user:", window.currentUserId);
-                    completedTasks = new Set(); // Clear tasks if document is deleted
-                    updateTaskCheckboxes();
-                    updateProgressChart();
                 }
-            }, (error) => {
-                console.error("Error listening to document: ", error);
             });
         };
-
-        // Function to load external HTML content
-        async function loadExternalContent(filename, targetElementId) {
-            const targetElement = document.getElementById(targetElementId);
-            if (!targetElement) {
-                console.error(`Target element with ID '${targetElementId}' not found.`);
-                return;
-            }
-            // Show loading indicator
-            targetElement.innerHTML = `<p class="text-center text-gray-500">Loading ${filename}...</p>`;
-
-            try {
-                const response = await fetch(filename);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const htmlContent = await response.text();
-                targetElement.innerHTML = htmlContent;
-            } catch (error) {
-                console.error(`Could not load ${filename}:`, error);
-                targetElement.innerHTML = `<p class="text-red-500 text-center">Failed to load content from ${filename}. Please ensure the file exists and is accessible in your GitHub repository's 'content/' subfolder.</p>`;
-            }
-        }
-
+        
+        // --- UI Rendering ---
         const templates = {
             dashboard: `
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h2 class="text-2xl font-bold mb-4 text-center">Course Overview</h2>
-                        <p class="text-gray-600 leading-relaxed">
-                            This interactive plan will guide you through six key modules, starting from Python fundamentals and progressing to building complex AI agents and integrating with leading global APIs. Your goal is not just to learn theory, but to gain practical skills that you can immediately apply in your engineering work and personal projects. Track your progress and watch your competencies grow!
-                        </p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h2 class="text-2xl font-bold mb-4 text-center">Your Progress</h2>
-                        <p class="text-center text-sm text-gray-500 mb-4">Note: Your progress is tracked individually based on your unique User ID. Persistence requires <a href="#deployment" class="text-blue-500 hover:underline">Firestore setup</a>.</p>
-                        <div class="chart-container h-64 md:h-72">
-                            <canvas id="progressChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
-                        <h2 class="text-2xl font-bold mb-4 text-center">Skills Map</h2>
-                        <p class="text-center text-gray-600 mb-4">A visualization of the key competencies you will acquire.</p>
-                        <div class="chart-container h-64 md:h-80">
-                            <canvas id="skillsChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            `,
+                    <div class="bg-white p-6 rounded-xl shadow-md"><h2 class="text-2xl font-bold mb-4 text-center">Course Overview</h2><p class="text-gray-600 leading-relaxed">This interactive plan will guide you through key modules, from Python fundamentals to building AI applications. Track your progress and watch your competencies grow!</p></div>
+                    <div class="bg-white p-6 rounded-xl shadow-md"><h2 class="text-2xl font-bold mb-4 text-center">Your Progress</h2><div class="chart-container h-64 md:h-72"><canvas id="progressChart"></canvas></div></div>
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md"><h2 class="text-2xl font-bold mb-4 text-center">Skills Map</h2><div class="chart-container h-64 md:h-80"><canvas id="skillsChart"></canvas></div></div>
+                </div>`,
             modules: `
                 <h2 class="text-2xl font-bold mb-6 text-center">Learning Modules</h2>
                 <div id="modules-container" class="space-y-4">
                     ${courseData.modules.map((module, index) => `
                         <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                            <div class="module-header p-4 sm:p-6 flex justify-between items-center bg-gray-50 hover:bg-gray-100" data-module-index="${index}">
+                            <div class="module-header p-4 sm:p-6 flex justify-between items-center bg-gray-50 hover:bg-gray-100">
                                 <h3 class="text-lg font-semibold text-gray-800">${module.title}</h3>
                                 <span class="transform transition-transform duration-300 text-blue-500">▼</span>
                             </div>
-                            <div class="module-content">
-                                <div class="p-4 sm:p-6 border-t border-gray-200">
-                                    <p class="text-gray-600 mb-4">${module.description}</p>
-                                    <h4 class="font-semibold mb-2">Practical Tasks:</h4>
-                                    <ul class="space-y-2">
-                                        ${module.tasks.map((task, taskIndex) => `
-                                            <li class="task-item flex items-center">
-                                                <label class="flex items-center cursor-pointer">
-                                                    <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" data-task-id="${index}-${taskIndex}">
-                                                    <span class="ml-3 text-gray-700">${task}</span>
-                                                </label>
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `,
+                            <div class="module-content"><div class="p-4 sm:p-6 border-t"><p class="text-gray-600 mb-4">${module.description}</p><h4 class="font-semibold mb-2">Tasks:</h4><ul class="space-y-2">
+                                ${module.tasks.map((task, taskIndex) => `
+                                    <li class="task-item"><label class="flex items-center cursor-pointer"><input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600" data-task-id="${index}-${taskIndex}"><span class="ml-3 text-gray-700">${task}</span></label></li>
+                                `).join('')}
+                            </ul></div></div>
+                        </div>`).join('')}
+                </div>`,
             info: `
                 <h2 class="text-2xl font-bold mb-6 text-center">Additional Information</h2>
-                <nav id="info-sub-nav" class="flex justify-center border-b border-gray-200 mb-8">
-                    <button data-sub-target="tools" class="sub-nav-link active py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🛠️ Tools</button>
-                    <button data-sub-target="resources" class="sub-nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🎓 Resources</button>
-                    <button data-sub-target="deployment" class="sub-nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🌐 Deployment</button>
-                </nav>
                 <div id="info-sub-content" class="bg-white p-6 rounded-xl shadow-md">
-                    <!-- Sub-content will be loaded here -->
-                    Loading sub-content...
-                </div>
-            `
+                    <p>This section would contain additional info like tools and resources.</p>
+                </div>`
         };
 
-        function renderContent(target) {
+        window.renderContent = (target) => {
             contentArea.innerHTML = templates[target];
-            if (target === 'dashboard') {
-                renderDashboardCharts();
-            } else if (target === 'modules') {
-                attachModuleListeners();
-            } else if (target === 'info') {
-                attachInfoSubNavListeners();
-                // Load tools.html by default when Info tab is clicked
-                loadExternalContent('content/tools.html', 'info-sub-content'); // Changed to load HTML directly
-            }
-        }
+            if (target === 'dashboard') renderDashboardCharts();
+            if (target === 'modules') attachModuleListeners();
+        };
 
-        // Removed renderToolsContent as we are now loading tools.html directly
-        // function renderToolsContent() {
-        //     const targetElement = document.getElementById('info-sub-content');
-        //     if (!targetElement) {
-        //         console.error("Target element for tools content not found.");
-        //         return;
-        //     }
-        //     if (typeof toolsData === 'undefined' || Object.keys(toolsData).length === 0) {
-        //         targetElement.innerHTML = `<p class="text-red-500 text-center">Tools data not loaded. Please ensure 'content/tools_data.js' exists and is correctly formatted with 'export const toolsData = ...'.</p>`;
-        //         console.error("toolsData is undefined or empty. Check content/tools_data.js import.");
-        //         return;
-        //     }
-        //     let toolsHtml = `
-        //         <h2 class="text-2xl font-bold mb-6 text-center">Tools and Technologies</h2>
-        //         <div class="space-y-8">
-        //             ${Object.entries(toolsData).map(([category, items]) => `
-        //                 <div>
-        //                     <h3 class="text-xl font-semibold mb-4 border-b-2 border-blue-300 pb-2">${category}</h3>
-        //                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        //                         ${items.map(item => `
-        //                             <div class="bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow">
-        //                                 <p class="font-medium text-gray-700">${item}</p>
-        //                             </div>
-        //                         `).join('')}
-        //                     </div>
-        //                 </div>
-        //             `).join('')}
-        //         </div>
-        //     `;
-        //     targetElement.innerHTML = toolsHtml;
-        // }
-
-        // Removed renderResourcesContent as we are now loading resources.html directly
-        // function renderResourcesContent() {
-        //     const targetElement = document.getElementById('info-sub-content');
-        //     if (!targetElement) {
-        //         console.error("Target element for resources content not found.");
-        //         return;
-        //     }
-        //     if (typeof resourcesData === 'undefined' || resourcesData.length === 0) {
-        //         targetElement.innerHTML = `<p class="text-red-500 text-center">Resources data not loaded. Please ensure 'content/resources_data.js' exists and is correctly formatted with 'export const resourcesData = ...'.</p>`;
-        //         console.error("resourcesData is undefined or empty. Check content/resources_data.js import.");
-        //         return;
-        //     }
-        //     let resourcesHtml = `
-        //         <h2 class="text-2xl font-bold mb-6 text-center">Recommended Resources and Courses</h2>
-        //         <p class="text-center text-gray-600 mb-8">A selection of Udemy courses for in-depth study of topics.</p>
-        //         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        //             ${resourcesData.map(resource => `
-        //                 <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
-        //                     <h3 class="font-bold text-lg text-gray-800">${resource.title}</h3>
-        //                     <p class="text-sm text-gray-500 mt-1 mb-4">Author: ${resource.author}</p>
-        //                     <div class="mt-auto">
-        //                         <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
-        //                             ${resource.category}
-        //                         </span>
-        //                     </div>
-        //                 </div>
-        //             `).join('')}
-        //         </div>
-        //     `;
-        //     targetElement.innerHTML = resourcesHtml;
-        // }
-
-
-        window.updateProgressChart = () => { // Made global for access from Firebase auth
-            if (!document.getElementById('progressChart')) return; // Ensure element exists
+        window.updateProgressChart = () => {
+            const chartEl = document.getElementById('progressChart');
+            if (!chartEl) return;
             const totalTasks = courseData.modules.reduce((acc, module) => acc + module.tasks.length, 0);
-            const completedCount = completedTasks.size;
-
-            const progressCtx = document.getElementById('progressChart').getContext('2d');
-            if (progressChart) progressChart.destroy(); // Destroy existing chart before creating a new one
-            progressChart = new Chart(progressCtx, {
+            const completedCount = window.completedTasks.size;
+            if (progressChart) progressChart.destroy();
+            progressChart = new Chart(chartEl.getContext('2d'), {
                 type: 'doughnut',
-                data: {
-                    labels: ['Completed', 'Remaining'],
-                    datasets: [{
-                        data: [completedCount, totalTasks - completedCount],
-                        backgroundColor: ['#3b82f6', '#e5e7eb'],
-                        borderColor: '#f8f9fa',
-                        borderWidth: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: false }
-                    }
-                }
+                data: { labels: ['Completed', 'Remaining'], datasets: [{ data: [completedCount, totalTasks - completedCount], backgroundColor: ['#3b82f6', '#e5e7eb'], borderWidth: 4, borderColor: '#f8f9fa' }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } }
             });
         };
 
         function renderDashboardCharts() {
-            window.updateProgressChart(); // Call the global function
-            
-            if (!document.getElementById('skillsChart')) return; // Ensure element exists
-            const skillsCtx = document.getElementById('skillsChart').getContext('2d');
-            if (skillsChart) skillsChart.destroy(); // Destroy existing chart before creating a new one
+            window.updateProgressChart();
+            const skillsCtx = document.getElementById('skillsChart')?.getContext('2d');
+            if (!skillsCtx) return;
+            if (skillsChart) skillsChart.destroy();
             skillsChart = new Chart(skillsCtx, {
                 type: 'radar',
-                data: {
-                    labels: courseData.skills.labels,
-                    datasets: [{
-                        label: 'Competency Level',
-                        data: courseData.skills.values,
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 2,
-                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        r: {
-                            angleLines: { color: '#d1d5db' },
-                            grid: { color: '#e5e7eb' },
-                            pointLabels: { font: { size: 12 }, color: '#4b5563' },
-                            ticks: {
-                                backdropColor: 'transparent',
-                                stepSize: 2,
-                                font: { weight: 'bold' }
-                            },
-                            suggestedMin: 0,
-                            suggestedMax: 10
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false }
-                    }
-                }
+                data: { labels: courseData.skills.labels, datasets: [{ label: 'Competency', data: courseData.skills.values, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: '#3b82f6', borderWidth: 2 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { suggestedMin: 0, suggestedMax: 10 } }, plugins: { legend: { display: false } } }
             });
         }
-
-        // Updates the checkboxes based on the completedTasks Set
+        
         function updateTaskCheckboxes() {
-            const taskCheckboxes = document.querySelectorAll('.task-item input[type="checkbox"]');
-            taskCheckboxes.forEach(checkbox => {
-                const taskId = checkbox.dataset.taskId;
-                checkbox.checked = completedTasks.has(taskId);
-                const span = checkbox.nextElementSibling;
-                if (checkbox.checked) {
-                    span.classList.add('line-through', 'text-gray-400');
-                    span.classList.remove('text-gray-700');
-                } else {
-                    span.classList.remove('line-through', 'text-gray-400');
-                    span.classList.add('text-gray-700');
-                }
+            document.querySelectorAll('.task-item input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = window.completedTasks.has(checkbox.dataset.taskId);
             });
         }
 
         function attachModuleListeners() {
-            const moduleHeaders = document.querySelectorAll('.module-header');
-            moduleHeaders.forEach(header => {
+            updateTaskCheckboxes();
+            document.querySelectorAll('.module-header').forEach(header => {
                 header.addEventListener('click', () => {
                     const content = header.nextElementSibling;
                     const icon = header.querySelector('span');
-                    
-                    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
-                        content.style.maxHeight = '0px';
-                        icon.style.transform = 'rotate(0deg)';
-                    } else {
-                        // Close other open modules
-                        document.querySelectorAll('.module-content').forEach(c => c.style.maxHeight = '0px');
-                        document.querySelectorAll('.module-header span').forEach(i => i.style.transform = 'rotate(0deg)');
-                        
+                    const isOpening = !content.style.maxHeight || content.style.maxHeight === '0px';
+                    document.querySelectorAll('.module-content').forEach(c => c.style.maxHeight = '0px');
+                    document.querySelectorAll('.module-header span').forEach(i => i.style.transform = 'rotate(0deg)');
+                    if (isOpening) {
                         content.style.maxHeight = content.scrollHeight + "px";
                         icon.style.transform = 'rotate(180deg)';
                     }
                 });
             });
-
-            const taskCheckboxes = document.querySelectorAll('.task-item input[type="checkbox"]');
-            taskCheckboxes.forEach(checkbox => {
-                const taskId = checkbox.dataset.taskId;
-                // Initial state update
-                checkbox.checked = completedTasks.has(taskId);
-                const span = checkbox.nextElementSibling;
-                if (checkbox.checked) {
-                    span.classList.add('line-through', 'text-gray-400');
-                    span.classList.remove('text-gray-700');
-                } else {
-                    span.classList.remove('line-through', 'text-gray-400');
-                    span.classList.add('text-gray-700');
-                }
-
-                checkbox.addEventListener('change', async (e) => {
+            document.querySelectorAll('.task-item input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
                     const taskId = e.target.dataset.taskId;
-                    if (e.target.checked) {
-                        completedTasks.add(taskId);
-                    } else {
-                        completedTasks.delete(taskId);
-                    }
-                    await window.saveCompletedTasks(); // Save to Firestore (or locally if not configured)
+                    e.target.checked ? window.completedTasks.add(taskId) : window.completedTasks.delete(taskId);
+                    window.saveCompletedTasks();
+                    updateProgressChart();
                 });
             });
         }
-
-        function attachInfoSubNavListeners() {
-            const infoSubNav = document.getElementById('info-sub-nav'); // Get the sub-navigation container
-            if (!infoSubNav) {
-                console.error("Info sub-navigation container not found.");
-                return;
-            }
-            const subNavLinks = infoSubNav.querySelectorAll('.sub-nav-link');
-            
-            subNavLinks.forEach(link => {
-                link.addEventListener('click', (e) => {
-                    const subTarget = e.target.dataset.subTarget;
-                    
-                    subNavLinks.forEach(l => l.classList.remove('active'));
-                    e.target.classList.add('active');
-                    
-                    // Load content based on sub-target, now consistently loading HTML files
-                    loadExternalContent(`content/${subTarget}.html`, 'info-sub-content');
-                });
-            });
-             // Ensure 'tools' is active by default when 'info' tab is rendered
-            const defaultSubTab = infoSubNav.querySelector('[data-sub-target="tools"]');
-            if (defaultSubTab) {
-                defaultSubTab.classList.add('active');
-            }
-        }
-
 
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 const target = e.target.dataset.target;
-                
                 navLinks.forEach(l => l.classList.remove('active'));
-                e.target.classList.add('active');
-                
-                renderContent(target);
+                e.currentTarget.classList.add('active');
+                window.renderContent(target);
             });
         });
-
-        // Initial render and data loading after Firebase is ready
-        window.addEventListener('load', async () => {
-            renderContent('dashboard'); // Render initial content (charts might not have data yet)
-            // Firebase authentication and data loading handled by onAuthStateChanged
-            // The onAuthStateChanged listener will call loadCompletedTasks and updateProgressChart
-            // once authentication is complete, and then hide the loading indicator.
-            window.setupFirestoreListener(); // Start real-time listener
+        
+        // Initial render on page load
+        window.addEventListener('load', () => {
+             renderContent('dashboard');
         });
     </script>
 </body>
