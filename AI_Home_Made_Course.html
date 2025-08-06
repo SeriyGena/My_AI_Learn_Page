@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive AI Course Plan for Engineer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony Neutrals -->
+    <!-- Application Structure Plan: I designed the application as an interactive dashboard with tabs (Home, Modules, Tools, Resources, Deployment). This structure provides non-linear access to information, allowing the user to easily switch between a general progress overview, detailed module content, and reference materials. This is more convenient and intuitive than scrolling through a long document, as it encourages active exploration and allows focusing on specific topics of interest at any time. -->
+    <!-- Visualization & Content Choices:
+        1. Report Information: Overall course structure and tasks -> Goal: Visualize progress and acquired skills -> Visualization: Doughnut chart (Chart.js) for overall progress and Radar chart (Chart.js) for skills. -> Interactivity: Progress chart updates when tasks are marked as completed. -> Justification: Instant visual feedback motivates and provides a clear understanding of the journey completed and future competencies.
+        2. Report Information: Module sections -> Goal: Structure learning content -> Presentation: Interactive accordion cards. -> Interactivity: Clicking on a module header expands its detailed content. -> Justification: Prevents information overload ("wall of text"), making navigation through course content manageable and clear. Implemented with JS.
+        3. Report Information: Lists of libraries, APIs, LLMs -> Goal: Create a quick reference guide -> Presentation: Styled cards in a grid layout. -> Interactivity: Clicking on a card could display additional information in the future. -> Justification: Transforms simple lists into a useful, easily browsable reference section. Implemented with HTML/Tailwind.
+        4. New Section: Site Deployment -> Goal: Provide practical steps for hosting the web application -> Presentation: Detailed list of steps for GitHub Pages, Netlify, Vercel. -> Interactivity: Informational, with clear steps for user action outside the app. -> Justification: Addresses user's direct query about deployment, making the course plan actionable beyond just content. Implemented with HTML/Tailwind.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: auto;
+            max-height: 400px;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+        }
+        .module-header {
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .module-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+        }
+        .task-item input:checked + span {
+            text-decoration: line-through;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Application for Engineers</h1>
+            <p class="text-md text-gray-600 mt-2">Your Personal Interactive Learning Plan</p>
+        </header>
+
+        <nav class="flex justify-center border-b border-gray-200 mb-8">
+            <button data-target="dashboard" class="nav-link active py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">🚀 Home</button>
+            <button data-target="modules" class="nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">📚 Modules</button>
+            <button data-target="tools" class="nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">🛠️ Tools</button>
+            <button data-target="resources" class="nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">🎓 Resources</button>
+            <button data-target="deployment" class="nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">🌐 Deployment</button>
+        </nav>
+
+        <main id="content-area">
+            <!-- Content will be injected here by JavaScript -->
+        </main>
+
+    </div>
+
+    <script>
+        const courseData = {
+            modules: [
+                {
+                    title: "Module 1: Python Fundamentals for AI & LLM",
+                    description: "Setting up the development environment and mastering key data manipulation libraries, which forms the foundation for all subsequent topics.",
+                    tasks: [
+                        "Set up Python development environment in VSCode",
+                        "Install JupyterLab for interactive work",
+                        "Master NumPy basics for numerical operations",
+                        "Learn Pandas for data manipulation and analysis"
+                    ]
+                },
+                {
+                    title: "Module 2: 3D Visualization and Interactive Models",
+                    description: "Learn to create parametric 3D models and interactive visualizations for analyzing complex technical situations.",
+                    tasks: [
+                        "Create a parametric 3D model of a component using CadQuery",
+                        "Visualize the 3D model using PyVista or Open3D",
+                        "Create an interactive web application to control the model in Streamlit"
+                    ]
+                },
+                {
+                    title: "Module 3: LLMs for Workflow Automation",
+                    description: "Utilize the power of large language models to automate routine tasks: reports, documentation, and presentations.",
+                    tasks: [
+                        "Automatically generate an equipment status report",
+                        "Summarize extensive technical documentation using an LLM",
+                        "Generate content for a technical presentation"
+                    ]
+                },
+                {
+                    title: "Module 4: Failure Classification and Budget Forecasting",
+                    description: "Apply machine learning for predictive maintenance and financial planning.",
+                    tasks: [
+                        "Build a failure classification model using Scikit-learn",
+                        "Integrate the model into a monitoring system simulation",
+                        "Build a budget forecasting model based on time series data"
+                    ]
+                },
+                {
+                    title: "Module 5: AI Agents for Personal Use",
+                    description: "Create personal AI agents for financial management and information tracking.",
+                    tasks: [
+                        "Create an AI agent for stock monitoring using yfinance",
+                        "Develop an agent for personal budget management (CSV/SQLite)",
+                        "Explore multi-agent architecture for complex tasks"
+                    ]
+                },
+                {
+                    title: "Module 6: Using LLM APIs and Popular Services",
+                    description: "Learn to integrate your applications with leading LLMs and popular web services to extend their functionality.",
+                    tasks: [
+                        "Write scripts to interact with OpenAI, Google Gemini, Anthropic APIs",
+                        "Write scripts to interact with Mistral and Meta Llama 3 APIs",
+                        "Complete 2-3 integration projects with APIs (e.g., OpenWeatherMap, YouTube, Notion)"
+                    ]
+                }
+            ],
+            skills: {
+                labels: ['3D Visualization', 'Data Analysis', 'Machine Learning', 'LLM & Prompting', 'Agent Development', 'API Integration'],
+                values: [8, 7, 9, 10, 9, 8]
+            },
+            tools: {
+                'Python & Data': ['Python', 'VSCode', 'JupyterLab', 'NumPy', 'Pandas', 'Scikit-learn'],
+                '3D Visualization': ['Open3D', 'Mayavi', 'PyVista', 'CadQuery', 'Streamlit'],
+                'LLM & Agents': ['OpenAI API', 'Google Gemini API', 'Anthropic API', 'Mistral AI', 'Meta Llama 3', 'LangChain', 'LlamaIndex'],
+                'Third-Party APIs': ['yfinance', 'TMDB', 'Alpha Vantage', 'Notion API', 'Google Maps API', 'Stripe API', 'YouTube Data API', 'GitHub API', 'OpenWeatherMap', 'Spotify API']
+            },
+            resources: [
+                { title: "Master Machine Learning in Python with Scikit-Learn", author: "TM Quest", category: "ML" },
+                { title: "Time Series Analysis and Forecasting with Python", author: "Udemy", category: "Forecasting" },
+                { title: "Learn LangChain and LangGraph by building real world AI Agents", author: "Eden Marco", category: "Agents" },
+                { title: "Mastering OpenAI Python APIs: Unleash ChatGPT and GPT4", author: "Colt Steele", category: "API" },
+                { title: "Includes API, Web Services using REST, JSON...", author: "Nate Ross", category: "API" }
+            ]
+        };
+
+        const contentArea = document.getElementById('content-area');
+        const navLinks = document.querySelectorAll('.nav-link');
+        let progressChart, skillsChart;
+        let completedTasks = new Set();
+
+        const templates = {
+            dashboard: `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h2 class="text-2xl font-bold mb-4 text-center">Course Overview</h2>
+                        <p class="text-gray-600 leading-relaxed">
+                            This interactive plan will guide you through six key modules, starting from Python fundamentals and progressing to building complex AI agents and integrating with leading global APIs. Your goal is not just to learn theory, but to gain practical skills that you can immediately apply in your engineering work and personal projects. Track your progress and watch your competencies grow!
+                        </p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h2 class="text-2xl font-bold mb-4 text-center">Your Progress</h2>
+                        <div class="chart-container h-64 md:h-72">
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+                        <h2 class="text-2xl font-bold mb-4 text-center">Skills Map</h2>
+                        <p class="text-center text-gray-600 mb-4">A visualization of the key competencies you will acquire.</p>
+                        <div class="chart-container h-64 md:h-80">
+                            <canvas id="skillsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `,
+            modules: `
+                <h2 class="text-2xl font-bold mb-6 text-center">Learning Modules</h2>
+                <div id="modules-container" class="space-y-4">
+                    ${courseData.modules.map((module, index) => `
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                            <div class="module-header p-4 sm:p-6 flex justify-between items-center bg-gray-50 hover:bg-gray-100" data-module-index="${index}">
+                                <h3 class="text-lg font-semibold text-gray-800">${module.title}</h3>
+                                <span class="transform transition-transform duration-300 text-blue-500">▼</span>
+                            </div>
+                            <div class="module-content">
+                                <div class="p-4 sm:p-6 border-t border-gray-200">
+                                    <p class="text-gray-600 mb-4">${module.description}</p>
+                                    <h4 class="font-semibold mb-2">Practical Tasks:</h4>
+                                    <ul class="space-y-2">
+                                        ${module.tasks.map((task, taskIndex) => `
+                                            <li class="task-item flex items-center">
+                                                <label class="flex items-center cursor-pointer">
+                                                    <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" data-task-id="${index}-${taskIndex}">
+                                                    <span class="ml-3 text-gray-700">${task}</span>
+                                                </label>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `,
+            tools: `
+                <h2 class="text-2xl font-bold mb-6 text-center">Tools and Technologies</h2>
+                <div class="space-y-8">
+                    ${Object.entries(courseData.tools).map(([category, items]) => `
+                        <div>
+                            <h3 class="text-xl font-semibold mb-4 border-b-2 border-blue-300 pb-2">${category}</h3>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                ${items.map(item => `
+                                    <div class="bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow">
+                                        <p class="font-medium text-gray-700">${item}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `,
+            resources: `
+                <h2 class="text-2xl font-bold mb-6 text-center">Recommended Resources and Courses</h2>
+                <p class="text-center text-gray-600 mb-8">A selection of Udemy courses for in-depth study of topics.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${courseData.resources.map(resource => `
+                        <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
+                            <h3 class="font-bold text-lg text-gray-800">${resource.title}</h3>
+                            <p class="text-sm text-gray-500 mt-1 mb-4">Author: ${resource.author}</p>
+                            <div class="mt-auto">
+                                <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                                    ${resource.category}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `,
+            deployment: `
+                <h2 class="text-2xl font-bold mb-6 text-center">Website Deployment</h2>
+                <p class="text-center text-gray-600 mb-8">Learn how to host your interactive course plan online for free.</p>
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-800">1. GitHub Pages 🚀</h3>
+                        <p class="text-gray-600 mb-2">A free service from GitHub to host static websites directly from your repository. Ideal for single HTML files.</p>
+                        <ul class="list-disc list-inside text-gray-700 space-y-1">
+                            <li>Create a GitHub account.</li>
+                            <li>Create a new **public** repository (e.g., <code class="bg-gray-100 p-1 rounded">my-ai-course</code>).</li>
+                            <li>Upload your <code class="bg-gray-100 p-1 rounded">my_ai_course.html</code> file to the repository.</li>
+                            <li>Go to "Settings" -> "Pages", select the <code class="bg-gray-100 p-1 rounded">main</code> branch and <code class="bg-gray-100 p-1 rounded">/ (root)</code> folder, then "Save".</li>
+                            <li>Your site will be live at <code class="bg-gray-100 p-1 rounded">https://&lt;your_username&gt;.github.io/my-ai-course/</code>.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-800">2. Netlify ✨</h3>
+                        <p class="text-gray-600 mb-2">Offers incredibly easy and fast deployment for static sites, often with a simple drag-and-drop.</p>
+                        <ul class="list-disc list-inside text-gray-700 space-y-1">
+                            <li>Create a Netlify account.</li>
+                            <li>On the dashboard, click "Add new site" -> "Deploy manually".</li>
+                            <li>Drag and drop your <code class="bg-gray-100 p-1 rounded">my_ai_course.html</code> file (or folder) into the designated area.</li>
+                            <li>Netlify will automatically assign a URL (e.g., <code class="bg-gray-100 p-1 rounded">https://random-name-12345.netlify.app</code>). You can change it in site settings.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-800">3. Vercel ⚡</h3>
+                        <p class="text-gray-600 mb-2">Popular among developers, Vercel provides similar simplicity for deploying static sites.</p>
+                        <ul class="list-disc list-inside text-gray-700 space-y-1">
+                            <li>Create a Vercel account.</li>
+                            <li>On the dashboard, click "Add New..." -> "Project".</li>
+                            <li>You can import a GitHub repository or deploy manually by uploading your file.</li>
+                            <li>Vercel will also automatically assign a URL for your deployed site.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-800">Important Considerations:</h3>
+                        <ul class="list-disc list-inside text-gray-700 space-y-1">
+                            <li>**Google Drive:** Not recommended for direct HTML hosting as it no longer provides public web access to HTML files.</li>
+                            <li>**Updates:** To update your site, simply upload the new version of your <code class="bg-gray-100 p-1 rounded">my_ai_course.html</code> file to the chosen platform (e.g., commit changes to GitHub, re-drag-and-drop on Netlify).</li>
+                            <li>**Custom Domains:** All these services offer options to connect a custom domain if you own one.</li>
+                        </ul>
+                    </div>
+                </div>
+            `
+        };
+
+        function renderContent(target) {
+            contentArea.innerHTML = templates[target];
+            if (target === 'dashboard') {
+                renderDashboardCharts();
+            } else if (target === 'modules') {
+                attachModuleListeners();
+            }
+        }
+
+        function renderDashboardCharts() {
+            const totalTasks = courseData.modules.reduce((acc, module) => acc + module.tasks.length, 0);
+            const completedCount = completedTasks.size;
+
+            const progressCtx = document.getElementById('progressChart').getContext('2d');
+            if (progressChart) progressChart.destroy(); // Destroy existing chart before creating a new one
+            progressChart = new Chart(progressCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'Remaining'],
+                    datasets: [{
+                        data: [completedCount, totalTasks - completedCount],
+                        backgroundColor: ['#3b82f6', '#e5e7eb'],
+                        borderColor: '#f8f9fa',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    }
+                }
+            });
+
+            const skillsCtx = document.getElementById('skillsChart').getContext('2d');
+            if (skillsChart) skillsChart.destroy(); // Destroy existing chart before creating a new one
+            skillsChart = new Chart(skillsCtx, {
+                type: 'radar',
+                data: {
+                    labels: courseData.skills.labels,
+                    datasets: [{
+                        label: 'Competency Level',
+                        data: courseData.skills.values,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#d1d5db' },
+                            grid: { color: '#e5e7eb' },
+                            pointLabels: { font: { size: 12 }, color: '#4b5563' },
+                            ticks: {
+                                backdropColor: 'transparent',
+                                stepSize: 2,
+                                font: { weight: 'bold' }
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function updateProgressChart() {
+            if (!progressChart) return;
+            const totalTasks = courseData.modules.reduce((acc, module) => acc + module.tasks.length, 0);
+            const completedCount = completedTasks.size;
+            progressChart.data.datasets[0].data = [completedCount, totalTasks - completedCount];
+            progressChart.update();
+        }
+
+        function attachModuleListeners() {
+            const moduleHeaders = document.querySelectorAll('.module-header');
+            moduleHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const icon = header.querySelector('span');
+                    
+                    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                        content.style.maxHeight = '0px';
+                        icon.style.transform = 'rotate(0deg)';
+                    } else {
+                        // Close other open modules
+                        document.querySelectorAll('.module-content').forEach(c => c.style.maxHeight = '0px');
+                        document.querySelectorAll('.module-header span').forEach(i => i.style.transform = 'rotate(0deg)');
+                        
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        icon.style.transform = 'rotate(180deg)';
+                    }
+                });
+            });
+
+            const taskCheckboxes = document.querySelectorAll('.task-item input[type="checkbox"]');
+            taskCheckboxes.forEach(checkbox => {
+                const taskId = checkbox.dataset.taskId;
+                if (completedTasks.has(taskId)) {
+                    checkbox.checked = true;
+                }
+                checkbox.addEventListener('change', (e) => {
+                    const taskId = e.target.dataset.taskId;
+                    if (e.target.checked) {
+                        completedTasks.add(taskId);
+                    } else {
+                        completedTasks.delete(taskId);
+                    }
+                    updateProgressChart();
+                });
+            });
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                const target = e.target.dataset.target;
+                
+                navLinks.forEach(l => l.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                renderContent(target);
+            });
+        });
+
+        // Initial render
+        renderContent('dashboard');
+    </script>
+</body>
+</html>
