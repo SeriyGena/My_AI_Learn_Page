@@ -71,7 +71,7 @@
         if (auth) { // Only run if auth was successfully initialized
             onAuthStateChanged(auth, async (user) => {
                 const authStatusElement = document.getElementById('auth-status');
-                const userIdDisplayElement = document.getElementById('user-id-display');
+                const userIdDisplayElement = document.getElementById('user-id-display'); // Hidden by default
                 const authControlsElement = document.getElementById('auth-controls');
 
                 if (user) {
@@ -82,12 +82,14 @@
                         authStatusElement.classList.remove('text-red-500');
                         authStatusElement.classList.add('text-green-600');
                     }
+                    // User ID is hidden by default, but available in console
                     if (userIdDisplayElement) {
-                        userIdDisplayElement.textContent = `Your User ID: ${user.uid}`; // Display full user ID
+                        userIdDisplayElement.textContent = `User ID: ${user.uid}`;
+                        // userIdDisplayElement.style.display = 'none'; // Ensure it's hidden if not already
                     }
                     if (authControlsElement) {
                         authControlsElement.innerHTML = `
-                            <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Log Out</button>
+                            <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm">Log Out</button>
                         `;
                         document.getElementById('logout-button').addEventListener('click', async () => {
                             try {
@@ -113,15 +115,16 @@
                         authStatusElement.classList.add('text-red-500');
                     }
                     if (userIdDisplayElement) {
-                        userIdDisplayElement.textContent = 'Your User ID: N/A';
+                        userIdDisplayElement.textContent = 'User ID: N/A';
+                        // userIdDisplayElement.style.display = 'none'; // Ensure it's hidden if not already
                     }
                     if (authControlsElement) {
                         authControlsElement.innerHTML = `
-                            <input type="email" id="email-input" placeholder="Email" class="p-2 border rounded-md w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">
-                            <input type="password" id="password-input" placeholder="Password" class="p-2 border rounded-md w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">
-                            <button id="login-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">Log In</button>
-                            <button id="signup-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto">Sign Up</button>
-                            <button id="anonymous-login-button" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto mt-2">Continue Anonymously</button>
+                            <input type="email" id="email-input" placeholder="Email" class="p-2 border rounded-md w-32 sm:w-28 mb-2 sm:mb-0 sm:mr-2 text-sm">
+                            <input type="password" id="password-input" placeholder="Password" class="p-2 border rounded-md w-32 sm:w-28 mb-2 sm:mb-0 sm:mr-2 text-sm">
+                            <button id="login-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-md transition-colors text-sm mb-2 sm:mb-0 sm:mr-2">Log In</button>
+                            <button id="signup-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-3 rounded-md transition-colors text-sm">Sign Up</button>
+                            <button id="anonymous-login-button" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-md transition-colors text-sm mt-2">Continue Anonymously</button>
                         `;
                         document.getElementById('login-button').addEventListener('click', async () => {
                             const email = document.getElementById('email-input').value;
@@ -176,7 +179,8 @@
                 authStatusElement.classList.add('text-red-500');
             }
             if (userIdDisplayElement) {
-                userIdDisplayElement.textContent = 'Your User ID: Not Available';
+                userIdDisplayElement.textContent = 'User ID: Not Available';
+                // userIdDisplayElement.style.display = 'none'; // Ensure it's hidden if not already
             }
             if (authControlsElement) {
                 authControlsElement.innerHTML = `
@@ -202,6 +206,7 @@
         7. New Feature: Local Progress Fallback -> Goal: Allow functionality to be seen even without Firebase setup. -> Presentation: Checkbox and chart updates. -> Interactivity: Updates `completedTasks` Set and UI locally. -> Justification: Addresses user's request to preserve functionality visibility without immediate Firestore setup.
         8. New Feature: Email/Password Authentication -> Goal: Allow users to create accounts and log in for persistent profiles. -> Presentation: Login/Signup form and buttons. -> Interactivity: User input for email/password, Firebase Auth calls. -> Justification: Provides explicit user accounts as requested.
         9. New Feature: Grouping Resources and Deployment under "Info" tab. -> Goal: Organize navigation and allow external content loading. -> Presentation: New "Info" tab with sub-navigation and dynamic content area. -> Interactivity: Clicking "Info" reveals sub-menu; clicking sub-menu items loads content from external HTML files. -> Justification: Improves navigation and allows modular content updates.
+        10. UI/UX Enhancements: Positioning auth controls to top-right, making input/buttons smaller, improving header layout. -> Goal: Enhance visual appeal and prevent element overlap. -> Presentation: Updated CSS for header elements and Tailwind classes for inputs/buttons. -> Interactivity: Improved visual clarity. -> Justification: Addresses user's direct feedback on design issues.
     -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
@@ -248,25 +253,94 @@
             font-size: 1.2em;
             color: #3b82f6;
         }
+        /* New styles for positioning auth status and controls */
+        .header-container-wrapper {
+            display: flex;
+            flex-direction: column; /* Stack header content and auth controls vertically by default */
+            align-items: center; /* Center horizontally by default */
+            position: relative; /* Needed for absolute positioning of auth controls if desired */
+            padding-bottom: 2rem; /* Add some padding to prevent overlap with main content below */
+        }
+
+        .main-header-content {
+            text-align: center;
+            margin-bottom: 1rem; /* Space between title and auth controls on small screens */
+        }
+
+        .auth-section-wrapper {
+            /* This section will contain auth-status, user-id-display, and auth-controls */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* Align to the right within its own space */
+            position: absolute; /* Position relative to .container */
+            top: 1rem;
+            right: 1rem;
+            z-index: 10;
+            max-width: 90%; /* Prevent overflow on larger screens */
+            text-align: right; /* Ensure text inside is right-aligned */
+        }
+        
+        /* Adjust auth controls for better spacing and stacking on small screens */
+        #auth-controls {
+            display: flex;
+            flex-wrap: wrap; /* Allow items to wrap to next line */
+            justify-content: flex-end; /* Align buttons to the right */
+            gap: 0.5rem; /* Space between buttons */
+        }
+
+        #auth-controls input,
+        #auth-controls button {
+            flex-grow: 1; /* Allow items to grow to fill space */
+            min-width: 100px; /* Minimum width for inputs/buttons */
+        }
+
+        @media (max-width: 640px) { /* Small screens (mobile) */
+            .header-container-wrapper {
+                flex-direction: column; /* Stack elements vertically */
+                align-items: center; /* Center elements horizontally */
+                padding-bottom: 1rem; /* Reduce padding for mobile */
+            }
+            .auth-section-wrapper {
+                position: static; /* Remove absolute positioning on mobile */
+                width: 100%; /* Take full width */
+                align-items: center; /* Center align items */
+                margin-top: 1rem; /* Add space below main header content */
+                text-align: center; /* Center text */
+            }
+            #auth-controls {
+                flex-direction: column; /* Stack buttons vertically */
+                width: 100%;
+                gap: 0.5rem;
+            }
+            #auth-controls input,
+            #auth-controls button {
+                width: 100% !important; /* Force full width on mobile */
+                margin-right: 0 !important; /* Remove any lingering right margin */
+            }
+        }
     </style>
 </head>
 <body class="text-gray-800">
 
-    <div class="container mx-auto p-4 sm:p-6 md:p-8">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Eng. skills for non coder test_03</h1>
-            <p class="text-md text-gray-600 mt-2">Your Personal Interactive Learning Plan</p>
-            <div id="auth-status" class="text-sm mt-2 font-medium">Loading authentication status...</div>
-            <div id="user-id-display" class="text-xs text-gray-500 mt-1">Your User ID: N/A</div>
-            <div id="auth-controls" class="flex flex-col sm:flex-row justify-center items-center mt-4 space-y-2 sm:space-y-0 sm:space-x-2">
-                <!-- Auth controls will be injected here by JavaScript -->
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 relative">
+        <header class="mb-8 header-container-wrapper">
+            <div class="main-header-content">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Eng. skills for non coder test_04</h1>
+                <p class="text-md text-gray-600 mt-2 font-semibold text-lg tracking-wide">Your Personal Interactive Learning Plan</p>
+            </div>
+            
+            <div class="auth-section-wrapper">
+                <div id="auth-status" class="text-sm font-medium">Loading authentication status...</div>
+                <div id="user-id-display" class="text-xs text-gray-500 mt-1 hidden">Your User ID: N/A</div> <!-- Hidden by default -->
+                <div id="auth-controls" class="flex flex-col sm:flex-row justify-end items-center mt-2 space-y-2 sm:space-y-0 sm:space-x-2">
+                    <!-- Auth controls will be injected here by JavaScript -->
+                </div>
             </div>
         </header>
 
         <nav class="flex justify-center border-b border-gray-200 mb-8">
             <button data-target="dashboard" class="nav-link active py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">🚀 Home</button>
             <button data-target="modules" class="nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">📚 Modules</button>
-            <button data-target="tools" class="nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">🛠️ Tools</button>
             <button data-target="info" class="nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">ℹ️ Info</button>
         </nav>
 
@@ -506,29 +580,13 @@
                     `).join('')}
                 </div>
             `,
-            tools: `
-                <h2 class="text-2xl font-bold mb-6 text-center">Tools and Technologies</h2>
-                <div class="space-y-8">
-                    ${Object.entries(courseData.tools).map(([category, items]) => `
-                        <div>
-                            <h3 class="text-xl font-semibold mb-4 border-b-2 border-blue-300 pb-2">${category}</h3>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                                ${items.map(item => `
-                                    <div class="bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow">
-                                        <p class="font-medium text-gray-700">${item}</p>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `,
             // New 'Info' tab template with sub-navigation and content area
             info: `
                 <div class="flex flex-col md:flex-row gap-6">
                     <div id="info-sidebar" class="md:w-1/4 bg-white p-4 rounded-xl shadow-md flex flex-col space-y-2">
                         <button data-sub-target="resources" class="sub-nav-link text-left py-2 px-4 rounded-md hover:bg-gray-100 font-medium text-gray-700">🎓 Resources</button>
                         <button data-sub-target="deployment" class="sub-nav-link text-left py-2 px-4 rounded-md hover:bg-gray-100 font-medium text-gray-700">🌐 Deployment</button>
+                        <button data-sub-target="tools" class="sub-nav-link text-left py-2 px-4 rounded-md hover:bg-gray-100 font-medium text-gray-700">🛠️ Tools</button>
                         <!-- Future sections can be added here -->
                     </div>
                     <div id="info-content-area" class="md:w-3/4 bg-white p-6 rounded-xl shadow-md min-h-[400px]">
@@ -590,10 +648,12 @@
                         loadExternalContent('info-content-area', 'content/resources.html');
                     } else if (subTarget === 'deployment') {
                         loadExternalContent('info-content-area', 'content/deployment.html');
+                    } else if (subTarget === 'tools') { // Handle loading for tools.html
+                        loadExternalContent('info-content-area', 'content/tools.html');
                     }
                 });
             });
-            // Automatically click the first sub-nav button to load default content
+            // Automatically click the first sub-nav button to load default content (Resources)
             if (subNavButtons.length > 0) {
                 subNavButtons[0].click();
             }
@@ -763,3 +823,30 @@
     </script>
 </body>
 </html>
+```
+---
+
+## Что изменилось в коде:
+
+1.  **Новая структура заголовка:**
+    * Весь контент заголовка (основной заголовок, подзаголовок, статус аутентификации и элементы управления) теперь обернут в `<header class="mb-8 header-container-wrapper">`.
+    * `header-container-wrapper` использует **flexbox (`display: flex; flex-direction: column;`)** для управления расположением.
+    * Добавлен `main-header-content` для группировки `h1` и `p`.
+    * `auth-section-wrapper` теперь содержит элементы аутентификации и позиционируется **абсолютно** относительно `container mx-auto` (который теперь имеет `position: relative;`). Это позволяет ему "плавать" в правом верхнем углу, не влияя на основной поток заголовка.
+2.  **Улучшенное адаптивное поведение:**
+    * CSS для `auth-section-wrapper` и `auth-controls` был доработан, чтобы обеспечить правильное выравнивание и предотвратить перекрытие на различных размерах экрана, особенно на мобильных устройствах. Поля ввода и кнопки стали более компактными.
+3.  **Перемещение "Tools" в "Info":**
+    * Кнопка "Tools" была удалена из основного навигационного меню (`<nav>`).
+    * В шаблоне `info` (`templates.info`) добавлена кнопка "Tools" в боковое подменю (`info-sidebar`), и функция `attachInfoSubNavListeners` обновлена для загрузки `content/tools.html`.
+
+---
+
+## Что тебе нужно сделать дальше (ОЧЕНЬ ВАЖНО):
+
+1.  **Скопируй ВЕСЬ код** из `<immersive>` блока выше.
+2.  **Полностью замени содержимое твоего файла `index.html`** этим новым кодом.
+3.  **Загрузи обновленный `index.html` обратно на GitHub Pages.** Это критически важно, чтобы изменения вступили в силу на твоем развернутом сайте.
+4.  **Убедись, что ты создал файл `content/tools.html`** с содержимым, которое я тебе предоставил ранее, и загрузил его на GitHub.
+5.  **Убедись, что правила безопасности Firestore настроены для индивидуального отслеживания прогресса**, как мы обсуждали ранее.
+
+После этих шагов твой сайт на GitHub Pages должен выглядеть и работать, как ты и хотел, с исправленным дизайном заголовка и новой организацией ме
