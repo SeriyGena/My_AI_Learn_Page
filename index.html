@@ -396,7 +396,8 @@
                 return;
             }
             try {
-                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress');
+                // Corrected Firestore path: artifacts/{appId}/users/{userId}/userProgress/ai_course_progress_document
+                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'userProgress', 'ai_course_progress_document');
                 await window.setDoc(docRef, { tasks: Array.from(completedTasks) }, { merge: true });
                 console.log("Tasks saved to Firestore for user:", window.currentUserId, Array.from(completedTasks));
                 // Show a temporary message to the user
@@ -425,7 +426,8 @@
                 return;
             }
             try {
-                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress');
+                // Corrected Firestore path: artifacts/{appId}/users/{userId}/userProgress/ai_course_progress_document
+                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'userProgress', 'ai_course_progress_document');
                 console.log("Firestore document reference for loading:", docRef.path);
                 const docSnap = await window.getDoc(docRef);
                 if (docSnap.exists()) {
