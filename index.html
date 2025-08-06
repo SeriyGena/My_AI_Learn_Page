@@ -15,20 +15,13 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Import data from separate files
-        // These imports are crucial for loading data from external JS files.
-        // Ensure these files exist in the 'content/' directory on your GitHub.
-        import { resourcesData } from './content/resources_data.js';
-        import { toolsData } from './content/tools_data.js';
-
         // Your web app's Firebase configuration (obtained from Firebase Project Settings)
         // This configuration is hardcoded here for deployment on GitHub Pages.
-        // It's essential for your site to connect to YOUR Firebase project.
         const firebaseConfig = {
             apiKey: "AIzaSyB7oxoQua0Wgqzl2IbwL1Uzx-N7hcAnuLw",
             authDomain: "ai-skills-for-non-coder-engs.firebaseapp.com",
             projectId: "ai-skills-for-non-coder-engs",
-            storageBucket: "ai-skills-for-non-coder-engs.firebasestorage.app",
+            storageBucket: "ai-skills-for-non-coder-engs.firebaseApp.com",
             messagingSenderId: "1026548286381",
             appId: "1:1026548286381:web:706b379a6ac131dfb2d724",
             measurementId: "G-6QL2CKNTX6" // Measurement ID is optional for basic Firebase usage
@@ -78,9 +71,8 @@
         if (auth) { // Only run if auth was successfully initialized
             onAuthStateChanged(auth, async (user) => {
                 const authStatusElement = document.getElementById('auth-status');
-                const userIdDisplayElement = document.getElementById('user-id-display'); // Hidden by default
+                const userIdDisplayElement = document.getElementById('user-id-display');
                 const authControlsElement = document.getElementById('auth-controls');
-                const mainContentArea = document.getElementById('content-area'); // Get main content area
 
                 if (user) {
                     console.log("User signed in:", user.uid);
@@ -90,14 +82,12 @@
                         authStatusElement.classList.remove('text-red-500');
                         authStatusElement.classList.add('text-green-600');
                     }
-                    // User ID is hidden by default, but available in console
                     if (userIdDisplayElement) {
-                        userIdDisplayElement.textContent = `User ID: ${user.uid}`;
-                        // userIdDisplayElement.style.display = 'none'; // Ensure it's hidden if not already
+                        userIdDisplayElement.textContent = `Your User ID: ${user.uid}`; // Display full user ID
                     }
                     if (authControlsElement) {
                         authControlsElement.innerHTML = `
-                            <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm">Log Out</button>
+                            <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Log Out</button>
                         `;
                         document.getElementById('logout-button').addEventListener('click', async () => {
                             try {
@@ -123,16 +113,15 @@
                         authStatusElement.classList.add('text-red-500');
                     }
                     if (userIdDisplayElement) {
-                        userIdDisplayElement.textContent = 'User ID: N/A';
-                        // userIdDisplayElement.style.display = 'none'; // Ensure it's hidden if not already
+                        userIdDisplayElement.textContent = 'Your User ID: N/A';
                     }
                     if (authControlsElement) {
                         authControlsElement.innerHTML = `
-                            <input type="email" id="email-input" placeholder="Email" class="p-2 border rounded-md w-32 sm:w-28 mb-2 sm:mb-0 sm:mr-2 text-sm">
-                            <input type="password" id="password-input" placeholder="Password" class="p-2 border rounded-md w-32 sm:w-28 mb-2 sm:mb-0 sm:mr-2 text-sm">
-                            <button id="login-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-md transition-colors text-sm mb-2 sm:mb-0 sm:mr-2">Log In</button>
-                            <button id="signup-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-3 rounded-md transition-colors text-sm">Sign Up</button>
-                            <button id="anonymous-login-button" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-md transition-colors text-sm mt-2">Continue Anonymously</button>
+                            <input type="email" id="email-input" placeholder="Email" class="p-2 border rounded-md w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">
+                            <input type="password" id="password-input" placeholder="Password" class="p-2 border rounded-md w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">
+                            <button id="login-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">Log In</button>
+                            <button id="signup-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto">Sign Up</button>
+                            <button id="anonymous-login-button" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto mt-2">Continue Anonymously</button>
                         `;
                         document.getElementById('login-button').addEventListener('click', async () => {
                             const email = document.getElementById('email-input').value;
@@ -170,20 +159,16 @@
                     // This is handled by the onAuthStateChanged callback itself, which will trigger signInAnonymously
                     // if no user is found. No need for an explicit call here unless we want to force it immediately.
                 }
-                // Hide loading indicator and show main content after authentication state is determined and initial data loaded
+                // Hide loading indicator once authentication state is determined and initial data loaded
                 const loadingIndicator = document.getElementById('loading-indicator');
                 if (loadingIndicator) {
                     loadingIndicator.style.display = 'none';
-                }
-                if (mainContentArea) {
-                    mainContentArea.classList.remove('hidden'); // Show main content
                 }
             });
         } else { // If auth initialization failed
             const authStatusElement = document.getElementById('auth-status');
             const userIdDisplayElement = document.getElementById('user-id-display');
             const authControlsElement = document.getElementById('auth-controls');
-            const mainContentArea = document.getElementById('content-area'); // Get main content area
 
             if (authStatusElement) {
                 authStatusElement.textContent = 'Firebase Not Configured / Connection Failed';
@@ -191,8 +176,7 @@
                 authStatusElement.classList.add('text-red-500');
             }
             if (userIdDisplayElement) {
-                userIdDisplayElement.textContent = 'User ID: Not Available';
-                // userIdDisplayElement.style.display = 'none'; // Ensure it's hidden if not already
+                userIdDisplayElement.textContent = 'Your User ID: Not Available';
             }
             if (authControlsElement) {
                 authControlsElement.innerHTML = `
@@ -203,27 +187,9 @@
             if (loadingIndicator) {
                 loadingIndicator.style.display = 'none';
             }
-            if (mainContentArea) {
-                mainContentArea.classList.remove('hidden'); // Show main content even if Firebase failed
-            }
         }
     </script>
 
-    <!-- Chosen Palette: Calm Harmony Neutrals -->
-    <!-- Application Structure Plan: I designed the application as an interactive dashboard with tabs (Home, Modules, Tools, Resources, Deployment). This structure provides non-linear access to information, allowing the user to easily switch between a general progress overview, detailed module content, and reference materials. This is more convenient and intuitive than scrolling through a long document, as it encourages active exploration and allows focusing on specific topics of interest at any time. -->
-    <!-- Visualization & Content Choices:
-        1. Report Information: Overall course structure and tasks -> Goal: Visualize progress and acquired skills -> Visualization: Doughnut chart (Chart.js) for overall progress and Radar chart (Chart.js) for skills. -> Interactivity: Progress chart updates when tasks are marked as completed. -> Justification: Instant visual feedback motivates and provides a clear understanding of the journey completed and future competencies.
-        2. Report Information: Module sections -> Goal: Structuring learning content -> Presentation: Interactive accordion cards. -> Interactivity: Clicking on a module header expands its detailed content. -> Justification: Prevents information overload ("wall of text"), making navigation through course content manageable and clear. Implemented with JS.
-        3. Report Information: Lists of libraries, APIs, LLMs -> Goal: Create a quick reference guide -> Presentation: Styled cards in a grid layout. -> Interactivity: Clicking on a card could display additional information in the future. -> Justification: Transforms simple lists into a useful, easily browsable reference section. Implemented with HTML/Tailwind.
-        4. New Section: Site Deployment -> Goal: Provide practical steps for hosting the web application -> Presentation: Detailed list of steps for GitHub Pages, Netlify, Vercel. -> Interactivity: Informational, with clear steps for user action outside the app. -> Justification: Addresses user's direct query about deployment, making the course plan actionable beyond just content. Implemented with HTML/Tailwind.
-        5. New Feature: Individual Progress Tracking -> Goal: Persist and track checklist status for each unique user -> Presentation: Checkboxes within module tasks, progress charts. -> Interactivity: Checkbox clicks update Firestore for the specific user's document; changes update UI. -> Justification: Addresses user's request for individual, persistent progress.
-        6. New Feature: Authentication Status Display & User ID -> Goal: Visually inform user about authentication status and their unique ID -> Presentation: Small text indicator in the header, displaying full user ID. -> Interactivity: Updates dynamically based on Firebase auth state. -> Justification: Clearly shows the user their unique identifier for tracking their own progress.
-        7. New Feature: Local Progress Fallback -> Goal: Allow functionality to be seen even without Firebase setup. -> Presentation: Checkbox and chart updates. -> Interactivity: Updates `completedTasks` Set and UI locally. -> Justification: Addresses user's request to preserve functionality visibility without immediate Firestore setup.
-        8. New Feature: Email/Password Authentication -> Goal: Allow users to create accounts and log in for persistent profiles. -> Presentation: Login/Signup form and buttons. -> Interactivity: User input for email/password, Firebase Auth calls. -> Justification: Provides explicit user accounts as requested.
-        9. New Feature: Grouping Resources and Deployment under "Info" tab. -> Goal: Organize navigation and allow external content loading. -> Presentation: New "Info" tab with sub-navigation and dynamic content area. -> Interactivity: Clicking "Info" reveals sub-menu; clicking sub-menu items loads content from external HTML files. -> Justification: Improves navigation and allows modular content updates.
-        10. UI/UX Enhancements: Positioning auth controls to top-right, making input/buttons smaller, improving header layout. -> Goal: Enhance visual appeal and prevent element overlap. -> Presentation: Updated CSS for header elements and Tailwind classes for inputs/buttons. -> Interactivity: Improved visual clarity. -> Justification: Addresses user's direct feedback on design issues.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -246,6 +212,14 @@
             border-bottom-color: #3b82f6;
             color: #3b82f6;
         }
+        .sub-nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .sub-nav-link.active {
+            border-bottom-color: #10b981; /* A different color for sub-nav active state */
+            color: #10b981;
+        }
         .module-header {
             cursor: pointer;
             transition: background-color 0.3s ease;
@@ -264,117 +238,37 @@
             display: flex; /* Changed from none to flex for initial visibility */
             justify-content: center;
             align-items: center;
-            height: 100vh; /* Full viewport height */
-            width: 100vw;  /* Full viewport width */
-            position: fixed; /* Fixed position to cover entire screen */
-            top: 0;
-            left: 0;
-            background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent white background */
-            z-index: 1000; /* Ensure it's on top of everything */
+            height: 100px;
             font-size: 1.2em;
             color: #3b82f6;
-        }
-        /* New styles for positioning auth status and controls */
-        header {
-            position: relative; /* Make header a positioning context for absolute children */
-            padding-bottom: 1rem; /* Default padding bottom */
-            text-align: center; /* Center the main header text */
-        }
-
-        .header-main-content {
-            text-align: center;
-            margin-bottom: 1rem; /* Space below title content */
-        }
-
-        .auth-section-wrapper {
-            position: absolute;
-            top: 1rem; /* Distance from the top of the container */
-            right: 1rem; /* Distance from the right of the container */
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end; /* Align elements to the right */
-            gap: 0.5rem;
-            z-index: 10;
-            max-width: 50%; /* Constrain width to prevent overlap with h1 on larger screens */
-            text-align: right; /* Ensure text inside is right-aligned */
-        }
-        
-        /* Ensure main header content doesn't get pushed by absolute positioning */
-        /* This is the key fix for overlap */
-        .container.mx-auto.relative > header {
-            padding-top: 80px; /* Adjust this value based on the height of your auth controls */
-            /* This pushes down the main header content to make space for the absolutely positioned auth controls */
-        }
-
-
-        /* Adjust auth controls for better spacing and stacking on small screens */
-        #auth-controls {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-            gap: 0.5rem;
-        }
-
-        #auth-controls input,
-        #auth-controls button {
-            flex-grow: 1;
-            min-width: 100px;
-        }
-
-        @media (max-width: 768px) { /* Adjust breakpoint for mobile */
-            .auth-section-wrapper {
-                position: static; /* Remove absolute positioning on mobile */
-                width: 100%; /* Take full width */
-                align-items: center; /* Center align items */
-                margin-top: 1rem; /* Add space below main header content */
-                text-align: center; /* Center text */
-                max-width: 100%; /* Full width on mobile */
-                padding-left: 0;
-                padding-right: 0;
-            }
-            #auth-controls {
-                flex-direction: column; /* Stack buttons vertically */
-                width: 100%;
-                gap: 0.5rem;
-            }
-            #auth-controls input,
-            #auth-controls button {
-                width: 100% !important; /* Force full width on mobile */
-                margin-right: 0 !important; /* Remove any lingering right margin */
-            }
         }
     </style>
 </head>
 <body class="text-gray-800">
 
-    <div class="container mx-auto p-4 sm:p-6 md:p-8 relative">
-        <header class="mb-8">
-            <div class="header-main-section">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Eng. skills for non coder test_04</h1>
-                <p class="text-md text-gray-600 mt-2 font-semibold text-lg tracking-wide">Your Personal Interactive Learning Plan</p>
-            </div>
-            
-            <div class="auth-section-wrapper">
-                <div id="auth-status" class="text-sm font-medium">Loading authentication status...</div>
-                <div id="user-id-display" class="text-xs text-gray-500 mt-1 hidden">Your User ID: N/A</div> <!-- Hidden by default -->
-                <div id="auth-controls" class="flex flex-col sm:flex-row justify-end items-center mt-2 space-y-2 sm:space-y-0 sm:space-x-2">
-                    <!-- Auth controls will be injected here by JavaScript -->
-                </div>
+    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Eng. skills for non coder test_03</h1>
+            <p class="text-md text-gray-600 mt-2">Your Personal Interactive Learning Plan</p>
+            <div id="auth-status" class="text-sm mt-2 font-medium">Loading authentication status...</div>
+            <div id="user-id-display" class="text-xs text-gray-500 mt-1">Your User ID: N/A</div>
+            <div id="auth-controls" class="flex flex-col sm:flex-row justify-center items-center mt-4 space-y-2 sm:space-y-0 sm:space-x-2">
+                <!-- Auth controls will be injected here by JavaScript -->
             </div>
         </header>
 
         <nav class="flex justify-center border-b border-gray-200 mb-8">
             <button data-target="dashboard" class="nav-link active py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">🚀 Home</button>
             <button data-target="modules" class="nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">📚 Modules</button>
-            <button data-target="info" class="nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">ℹ️ Info</button>
+            <button data-target="info" class="nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-blue-500">💡 Info</button>
         </nav>
 
-        <!-- Full-page loading indicator -->
-        <div id="loading-indicator" class="fixed inset-0 bg-white flex justify-center items-center z-50">
-            <p class="text-blue-600 text-lg font-medium">Loading course data...</p>
+        <!-- Moved loading indicator outside of main content area -->
+        <div id="loading-indicator" class="flex justify-center items-center h-24 text-blue-600 text-lg font-medium">
+            Loading course data...
         </div>
 
-        <main id="content-area" class="hidden"> <!-- Initially hidden -->
+        <main id="content-area">
             <!-- Content will be injected here by JavaScript -->
         </main>
 
@@ -445,15 +339,20 @@
                 labels: ['3D Visualization', 'Data Analysis', 'Machine Learning', 'LLM & Prompting', 'Agent Development', 'API Integration'],
                 values: [8, 7, 9, 10, 9, 8]
             },
-            // tools and resources data are now imported from separate files
-            tools: {}, // This will be populated by imported toolsData
-            resources: [] // This will be populated by imported resourcesData
+            tools: { // This data is now illustrative, as content will be fetched from tools.html
+                'Python & Data': ['Python', 'VSCode', 'JupyterLab', 'NumPy', 'Pandas', 'Scikit-learn'],
+                '3D Visualization': ['Open3D', 'Mayavi', 'PyVista', 'CadQuery', 'Streamlit'],
+                'LLM & Agents': ['OpenAI API', 'Google Gemini API', 'Anthropic API', 'Mistral AI', 'Meta Llama 3', 'LangChain', 'LlamaIndex'],
+                'Third-Party APIs': ['yfinance', 'TMDB', 'Alpha Vantage', 'Notion API', 'Google Maps API', 'Stripe API', 'YouTube Data API', 'GitHub API', 'OpenWeatherMap', 'Spotify API']
+            },
+            resources: [ // This data is now illustrative, as content will be fetched from resources.html
+                { title: "Master Machine Learning in Python with Scikit-Learn", author: "TM Quest", category: "ML" },
+                { title: "Time Series Analysis and Forecasting with Python", author: "Udemy", category: "Forecasting" },
+                { title: "Learn LangChain and LangGraph by building real world AI Agents", author: "Eden Marco", category: "Agents" },
+                { title: "Mastering OpenAI Python APIs: Unleash ChatGPT and GPT4", author: "Colt Steele", category: "API" },
+                { title: "Includes API, Web Services using REST, JSON...", author: "Nate Ross", category: "API" }
+            ]
         };
-
-        // Populate courseData with imported data after it's defined
-        Object.assign(courseData.tools, toolsData);
-        courseData.resources = resourcesData;
-
 
         const contentArea = document.getElementById('content-area');
         const navLinks = document.querySelectorAll('.nav-link');
@@ -545,6 +444,25 @@
             });
         };
 
+        // Function to load external HTML content
+        async function loadExternalContent(filename, targetElementId) {
+            const targetElement = document.getElementById(targetElementId);
+            if (!targetElement) {
+                console.error(`Target element with ID '${targetElementId}' not found.`);
+                return;
+            }
+            try {
+                const response = await fetch(filename);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const htmlContent = await response.text();
+                targetElement.innerHTML = htmlContent;
+            } catch (error) {
+                console.error(`Could not load ${filename}:`, error);
+                targetElement.innerHTML = `<p class="text-red-500 text-center">Failed to load content from ${filename}. Please ensure the file exists and is accessible.</p>`;
+            }
+        }
 
         const templates = {
             dashboard: `
@@ -600,18 +518,16 @@
                     `).join('')}
                 </div>
             `,
-            // New 'Info' tab template with sub-navigation and content area
             info: `
-                <div class="flex flex-col md:flex-row gap-6">
-                    <div id="info-sidebar" class="md:w-1/4 bg-white p-4 rounded-xl shadow-md flex flex-col space-y-2">
-                        <button data-sub-target="resources" class="sub-nav-link text-left py-2 px-4 rounded-md hover:bg-gray-100 font-medium text-gray-700">🎓 Resources</button>
-                        <button data-sub-target="deployment" class="sub-nav-link text-left py-2 px-4 rounded-md hover:bg-gray-100 font-medium text-gray-700">🌐 Deployment</button>
-                        <button data-sub-target="tools" class="sub-nav-link text-left py-2 px-4 rounded-md hover:bg-gray-100 font-medium text-gray-700">🛠️ Tools</button>
-                        <!-- Future sections can be added here -->
-                    </div>
-                    <div id="info-content-area" class="md:w-3/4 bg-white p-6 rounded-xl shadow-md min-h-[400px]">
-                        <!-- Content loaded dynamically here -->
-                    </div>
+                <h2 class="text-2xl font-bold mb-6 text-center">Additional Information</h2>
+                <nav class="flex justify-center border-b border-gray-200 mb-8">
+                    <button data-sub-target="tools" class="sub-nav-link active py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🛠️ Tools</button>
+                    <button data-sub-target="resources" class="sub-nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🎓 Resources</button>
+                    <button data-sub-target="deployment" class="sub-nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🌐 Deployment</button>
+                </nav>
+                <div id="info-sub-content" class="bg-white p-6 rounded-xl shadow-md">
+                    <!-- Sub-content will be loaded here -->
+                    Loading sub-content...
                 </div>
             `
         };
@@ -622,60 +538,10 @@
                 renderDashboardCharts();
             } else if (target === 'modules') {
                 attachModuleListeners();
-            } else if (target === 'info') { // Handle the new 'info' tab
+            } else if (target === 'info') {
                 attachInfoSubNavListeners();
-                // Load resources by default when 'info' tab is opened
-                loadExternalContent('info-content-area', 'content/resources.html');
-            }
-        }
-
-        // Function to load external HTML content
-        async function loadExternalContent(targetElementId, filePath) {
-            const targetElement = document.getElementById(targetElementId);
-            if (!targetElement) {
-                console.error(`Target element with ID '${targetElementId}' not found.`);
-                return;
-            }
-            targetElement.innerHTML = '<p class="text-center text-blue-500">Loading content...</p>'; // Loading indicator
-
-            try {
-                const response = await fetch(filePath);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const htmlContent = await response.text();
-                targetElement.innerHTML = htmlContent;
-            } catch (error) {
-                console.error(`Failed to load content from ${filePath}:`, error);
-                targetElement.innerHTML = `<p class="text-center text-red-500">Failed to load content. Please ensure '${filePath}' exists and is accessible.</p>`;
-            }
-        }
-
-        // Attach listeners for the new 'Info' sub-navigation
-        function attachInfoSubNavListeners() {
-            const subNavButtons = document.querySelectorAll('#info-sidebar .sub-nav-link');
-            const infoContentArea = document.getElementById('info-content-area'); // Ensure this element exists
-
-            subNavButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const subTarget = button.dataset.subTarget;
-                    // Remove active class from all sub-nav buttons
-                    subNavButtons.forEach(btn => btn.classList.remove('active', 'bg-gray-200'));
-                    // Add active class to the clicked button
-                    button.classList.add('active', 'bg-gray-200');
-
-                    if (subTarget === 'resources') {
-                        loadExternalContent('info-content-area', 'content/resources.html');
-                    } else if (subTarget === 'deployment') {
-                        loadExternalContent('info-content-area', 'content/deployment.html');
-                    } else if (subTarget === 'tools') { // Handle loading for tools.html
-                        loadExternalContent('info-content-area', 'content/tools.html');
-                    }
-                });
-            });
-            // Automatically click the first sub-nav button to load default content (Resources)
-            if (subNavButtons.length > 0) {
-                subNavButtons[0].click();
+                // Load tools.html by default when Info tab is clicked
+                loadExternalContent('tools.html', 'info-sub-content');
             }
         }
 
@@ -818,6 +684,23 @@
                 });
             });
         }
+
+        function attachInfoSubNavListeners() {
+            const subNavLinks = document.querySelectorAll('#info-sub-content').length > 0 ? document.querySelectorAll('#info-sub-content').previousElementSibling.querySelectorAll('.sub-nav-link') : [];
+            
+            subNavLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const subTarget = e.target.dataset.subTarget;
+                    
+                    subNavLinks.forEach(l => l.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    // Load content based on sub-target
+                    loadExternalContent(`${subTarget}.html`, 'info-sub-content');
+                });
+            });
+        }
+
 
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
