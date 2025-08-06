@@ -81,12 +81,12 @@
                     console.log("AUTH_CHANGE: User signed in:", user.uid);
                     window.currentUserId = user.uid; // Make userId available globally
                     if (authStatusElement) {
-                        authStatusElement.textContent = `Signed in as: ${user.email || 'Anonymous User'}`;
-                        authStatusElement.classList.remove('text-red-500');
+                        // FIX: Display only the user's identity, not the "Signed in as:" text.
+                        authStatusElement.textContent = user.email || 'Anonymous User';
+                        authStatusElement.classList.remove('hidden', 'text-red-500');
                         authStatusElement.classList.add('text-green-600');
                     }
                     if (userIdDisplayElement) {
-                        // FIX: Ensure the user ID display remains hidden
                         userIdDisplayElement.classList.add('hidden'); 
                     }
                     if (authControlsRightElement) {
@@ -113,7 +113,7 @@
                     window.currentUserId = null;
                     if (authStatusElement) {
                         authStatusElement.textContent = 'Not Signed In';
-                        authStatusElement.classList.remove('text-green-600');
+                        authStatusElement.classList.remove('hidden', 'text-green-600');
                         authStatusElement.classList.add('text-red-500');
                     }
                     if (userIdDisplayElement) {
@@ -236,6 +236,25 @@
             font-size: 1.2em;
             color: #3b82f6;
         }
+        /* Gemini Modal Styles */
+        #gemini-modal-backdrop {
+            transition: opacity 0.3s ease-in-out;
+        }
+        #gemini-modal-panel {
+            transition: all 0.3s ease-in-out;
+        }
+        .gemini-loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="text-gray-800">
@@ -274,6 +293,38 @@
         </main>
 
     </div>
+    
+    <!-- Gemini API Result Modal -->
+    <div id="gemini-modal" class="relative z-10 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div id="gemini-modal-backdrop" class="fixed inset-0 bg-gray-500 bg-opacity-75"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div id="gemini-modal-panel" class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl sm:my-8 sm:w-full sm:max-w-2xl">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.528L16.5 21.75l-.398-1.222a2.999 2.999 0 00-2.122-2.122L12.75 18l1.222-.398a2.999 2.999 0 002.122-2.122L16.5 14.25l.398 1.222a2.999 2.999 0 002.122 2.122L20.25 18l-1.222.398a2.999 2.999 0 00-2.122 2.122z" />
+                                </svg>
+                            </div>
+                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                                <h3 class="text-base font-semibold leading-6 text-gray-900" id="gemini-modal-title">AI Result</h3>
+                                <div class="mt-2" id="gemini-modal-content-wrapper">
+                                    <div id="gemini-modal-loader" class="flex justify-center items-center py-8">
+                                        <div class="gemini-loader"></div>
+                                    </div>
+                                    <div id="gemini-modal-content" class="text-sm text-gray-500 whitespace-pre-wrap max-h-96 overflow-y-auto"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button type="button" id="gemini-modal-close-button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         const courseData = {
@@ -301,9 +352,9 @@
                     title: "Module 3: LLMs for Workflow Automation",
                     description: "Utilize the power of large language models to automate routine tasks: reports, documentation, and presentations.",
                     tasks: [
-                        "Automatically generate an equipment status report",
-                        "Summarize extensive technical documentation using an LLM",
-                        "Generate content for a technical presentation"
+                        { text: "Automatically generate an equipment status report", type: 'gemini-action', action: 'generate-report' },
+                        { text: "Summarize extensive technical documentation using an LLM", type: 'gemini-action', action: 'summarize-text' },
+                        { text: "Generate content for a technical presentation", type: 'gemini-action', action: 'generate-presentation' }
                     ]
                 },
                 {
@@ -346,6 +397,51 @@
         const navLinks = document.querySelectorAll('.nav-link');
         let progressChart, skillsChart;
         window.completedTasks = new Set(); 
+
+        // --- Gemini API Function ---
+        async function callGeminiAPI(prompt, retries = 3, delay = 1000) {
+            const apiKey = ""; // This will be provided by the Canvas environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [{ text: prompt }]
+                }]
+            };
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        console.error("GEMINI_API: Unexpected response structure", result);
+                        return "Error: Could not get a valid response from the AI.";
+                    }
+                } catch (error) {
+                    console.error(`GEMINI_API: Attempt ${i + 1} failed.`, error);
+                    if (i === retries - 1) {
+                        return `Error: After multiple retries, the AI service could not be reached. Please check the console for details.`;
+                    }
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2; // Exponential backoff
+                }
+            }
+        }
 
         // --- Firestore Functions ---
         const getDocRef = () => {
@@ -445,15 +541,42 @@
                                 <div class="p-4 sm:p-6 border-t border-gray-200">
                                     <p class="text-gray-600 mb-4">${module.description}</p>
                                     <h4 class="font-semibold mb-2">Practical Tasks:</h4>
-                                    <ul class="space-y-2">
-                                        ${module.tasks.map((task, taskIndex) => `
-                                            <li class="task-item flex items-center">
-                                                <label class="flex items-center cursor-pointer">
-                                                    <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" data-task-id="${index}-${taskIndex}">
-                                                    <span class="ml-3 text-gray-700">${task}</span>
-                                                </label>
-                                            </li>
-                                        `).join('')}
+                                    <ul class="space-y-4">
+                                        ${module.tasks.map((task, taskIndex) => {
+                                            const taskId = `${index}-${taskIndex}`;
+                                            if (typeof task === 'object' && task.type === 'gemini-action') {
+                                                let interactiveElement = '';
+                                                if (task.action === 'summarize-text') {
+                                                    interactiveElement = `
+                                                        <div class="mt-2">
+                                                            <textarea id="summarize-input-${taskId}" class="w-full p-2 border rounded-md" placeholder="Paste text here to summarize..."></textarea>
+                                                            <button data-action="${task.action}" data-task-id="${taskId}" class="gemini-button mt-2 bg-purple-500 hover:bg-purple-600 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors">✨ Summarize Text</button>
+                                                        </div>
+                                                    `;
+                                                } else {
+                                                    const buttonText = task.action === 'generate-report' ? '✨ Generate Report' : '✨ Generate Ideas';
+                                                    interactiveElement = `<button data-action="${task.action}" data-task-id="${taskId}" class="gemini-button ml-4 bg-purple-500 hover:bg-purple-600 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors">${buttonText}</button>`;
+                                                }
+                                                return `
+                                                    <li class="task-item flex items-center justify-between">
+                                                        <label class="flex items-center cursor-pointer">
+                                                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" data-task-id="${taskId}">
+                                                            <span class="ml-3 text-gray-700">${task.text}</span>
+                                                        </label>
+                                                        ${interactiveElement}
+                                                    </li>
+                                                `;
+                                            }
+                                            // Default task rendering
+                                            return `
+                                                <li class="task-item flex items-center">
+                                                    <label class="flex items-center cursor-pointer">
+                                                        <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" data-task-id="${taskId}">
+                                                        <span class="ml-3 text-gray-700">${task}</span>
+                                                    </label>
+                                                </li>
+                                            `;
+                                        }).join('')}
                                     </ul>
                                     <div class="mt-4 flex justify-end">
                                         <button class="save-module-button bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md text-sm transition-colors" data-module-index="${index}">
@@ -487,13 +610,14 @@
                 attachModuleListeners();
             } else if (target === 'info') {
                 attachInfoSubNavListeners();
-                loadExternalContent('content/tools.html', 'info-sub-content');
+                // FIX: Reverted to fetching external content for GitHub Pages compatibility.
+                loadExternalContent('content/tools.html');
             }
         }
 
         window.updateProgressChart = () => {
             if (!document.getElementById('progressChart')) return;
-            const totalTasks = courseData.modules.reduce((acc, module) => acc + module.tasks.length, 0);
+            const totalTasks = courseData.modules.flatMap(m => m.tasks).length;
             const completedCount = window.completedTasks.size;
 
             const progressCtx = document.getElementById('progressChart').getContext('2d');
@@ -603,9 +727,69 @@
                 });
             });
 
+            // Gemini button logic
+            document.querySelectorAll('.gemini-button').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const action = e.target.dataset.action;
+                    const taskId = e.target.dataset.taskId;
+                    let prompt = '';
+                    let title = 'AI Result';
+
+                    switch(action) {
+                        case 'generate-report':
+                            prompt = 'Generate a brief, professional equipment status report for a fictional manufacturing plant. Include sections for production machinery, safety equipment, and IT infrastructure. Use markdown for formatting.';
+                            title = 'Generated Equipment Report';
+                            break;
+                        case 'summarize-text':
+                            const textToSummarize = document.getElementById(`summarize-input-${taskId}`).value;
+                            if (!textToSummarize.trim()) {
+                                alert("Please paste some text into the textarea to summarize.");
+                                return;
+                            }
+                            prompt = `Summarize the following technical documentation:\n\n---\n\n${textToSummarize}`;
+                            title = 'Summary';
+                            break;
+                        case 'generate-presentation':
+                            prompt = 'Generate a 5-slide content outline for a technical presentation on the topic of "Predictive Maintenance in Industrial IoT". For each slide, provide a title and 3-4 bullet points. Use markdown for formatting.';
+                            title = 'Presentation Content Ideas';
+                            break;
+                    }
+                    
+                    openGeminiModal(title);
+                    const result = await callGeminiAPI(prompt);
+                    showGeminiResult(result);
+                });
+            });
+
             // Set initial checkbox states
             window.updateTaskCheckboxes();
         }
+        
+        // --- Modal Functions ---
+        const modal = document.getElementById('gemini-modal');
+        const modalTitle = document.getElementById('gemini-modal-title');
+        const modalContent = document.getElementById('gemini-modal-content');
+        const modalLoader = document.getElementById('gemini-modal-loader');
+        
+        function openGeminiModal(title) {
+            modalTitle.textContent = title;
+            modalContent.innerHTML = '';
+            modalLoader.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+
+        function showGeminiResult(resultText) {
+            modalLoader.style.display = 'none';
+            modalContent.textContent = resultText;
+        }
+
+        function closeGeminiModal() {
+            modal.classList.add('hidden');
+        }
+
+        document.getElementById('gemini-modal-close-button').addEventListener('click', closeGeminiModal);
+        document.getElementById('gemini-modal-backdrop').addEventListener('click', closeGeminiModal);
+
 
         function attachInfoSubNavListeners() {
             const infoSubNav = document.getElementById('info-sub-nav');
@@ -616,14 +800,14 @@
                     const subTarget = e.target.dataset.subTarget;
                     infoSubNav.querySelectorAll('.sub-nav-link').forEach(l => l.classList.remove('active'));
                     e.target.classList.add('active');
-                    loadExternalContent(`content/${subTarget}.html`, 'info-sub-content');
+                    loadExternalContent(`content/${subTarget}.html`);
                 });
             });
             infoSubNav.querySelector('[data-sub-target="tools"]')?.classList.add('active');
         }
         
-        async function loadExternalContent(filename, targetElementId) {
-            const targetElement = document.getElementById(targetElementId);
+        async function loadExternalContent(filename) {
+            const targetElement = document.getElementById('info-sub-content');
             if (!targetElement) return;
             targetElement.innerHTML = `<p class="text-center text-gray-500">Loading...</p>`;
             try {
@@ -632,7 +816,7 @@
                 targetElement.innerHTML = await response.text();
             } catch (error) {
                 console.error(`Could not load ${filename}:`, error);
-                targetElement.innerHTML = `<p class="text-red-500 text-center">Failed to load content.</p>`;
+                targetElement.innerHTML = `<p class="text-red-500 text-center">Failed to load content. Ensure the file exists and the path is correct.</p>`;
             }
         }
 
