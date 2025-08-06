@@ -78,7 +78,7 @@
                 const userIdDisplayElement = document.getElementById('user-id-display');
                 const authControlsLeftElement = document.getElementById('auth-controls-left');
                 const authControlsRightElement = document.getElementById('auth-controls-right');
-                const loadingIndicator = document.getElementById('loading-indicator'); // Get loading indicator here
+
 
                 if (user) {
                     console.log("User signed in:", user.uid);
@@ -99,7 +99,7 @@
                             try {
                                 await window.signOut(window.firebaseAuth);
                                 console.log("User logged out.");
-                                // On logout, clear local progress and update UI
+                                // Optionally, clear local progress if desired after logout
                                 completedTasks = new Set();
                                 updateTaskCheckboxes();
                                 window.updateProgressChart();
@@ -169,7 +169,8 @@
                         });
                     }
                 }
-                // Always hide loading indicator after auth state is determined and data is processed
+                // Hide loading indicator once authentication state is determined and initial data loaded
+                const loadingIndicator = document.getElementById('loading-indicator');
                 if (loadingIndicator) {
                     loadingIndicator.style.display = 'none';
                 }
@@ -179,7 +180,6 @@
             const userIdDisplayElement = document.getElementById('user-id-display');
             const authControlsLeftElement = document.getElementById('auth-controls-left');
             const authControlsRightElement = document.getElementById('auth-controls-right');
-            const loadingIndicator = document.getElementById('loading-indicator'); // Get loading indicator here
 
             if (authStatusElement) {
                 authStatusElement.textContent = 'Firebase Not Configured / Connection Failed';
@@ -197,7 +197,8 @@
             if (authControlsRightElement) {
                 authControlsRightElement.innerHTML = ''; // Clear right controls if Firebase failed
             }
-            if (loadingIndicator) { // Ensure loading indicator is hidden even if Firebase fails
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
                 loadingIndicator.style.display = 'none';
             }
         }
@@ -381,108 +382,342 @@
 
         // Firestore functions
         window.saveCompletedTasks = async () => {
+            // Always update local state and UI first
             updateTaskCheckboxes();
             window.updateProgressChart();
 
             if (!window.firestoreDb || !window.currentAppId || !window.currentUserId || !window.doc || !window.setDoc) {
                 console.warn("Firestore not fully initialized or user not authenticated. Progress will not be persisted.");
-                // Show a temporary message to the user
-                const statusDiv = document.createElement('div');
-                statusDiv.textContent = "Progress not saved: Not authenticated or Firebase not configured.";
-                statusDiv.className = "fixed bottom-4 right-4 bg-red-500 text-white p-2 rounded-md shadow-lg text-sm";
-                document.body.appendChild(statusDiv);
-                setTimeout(() => statusDiv.remove(), 3000);
-                return;
+                return; // Exit if Firestore is not ready for persistence
             }
             try {
-                // Corrected Firestore path: artifacts/{appId}/users/{userId}/userProgress/ai_course_progress_document
-                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'userProgress', 'ai_course_progress_document');
+                // Individual user progress path: artifacts/{appId}/users/{userId}/ai_course_progress
+                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress');
                 await window.setDoc(docRef, { tasks: Array.from(completedTasks) }, { merge: true });
-                console.log("Tasks saved to Firestore for user:", window.currentUserId, Array.from(completedTasks));
-                // Show a temporary message to the user
-                const statusDiv = document.createElement('div');
-                statusDiv.textContent = "Progress saved!";
-                statusDiv.className = "fixed bottom-4 right-4 bg-green-500 text-white p-2 rounded-md shadow-lg text-sm";
-                document.body.appendChild(statusDiv);
-                setTimeout(() => statusDiv.remove(), 2000);
+                console.log("Tasks saved to Firestore for user:", window.currentUserId);
             } catch (e) {
                 console.error("Error saving document to Firestore: ", e);
-                const statusDiv = document.createElement('div');
-                statusDiv.textContent = `Error saving progress: ${e.message}`;
-                statusDiv.className = "fixed bottom-4 right-4 bg-red-500 text-white p-2 rounded-md shadow-lg text-sm";
-                document.body.appendChild(statusDiv);
-                setTimeout(() => statusDiv.remove(), 5000);
             }
         };
 
         window.loadCompletedTasks = async () => {
-            console.log("Attempting to load tasks for user:", window.currentUserId);
             if (!window.firestoreDb || !window.currentAppId || !window.currentUserId || !window.getDoc || !window.doc) {
-                console.warn("Firestore not fully initialized or user not authenticated. Cannot load persisted tasks. Current User ID:", window.currentUserId);
+                console.warn("Firestore not fully initialized or user not authenticated. Cannot load persisted tasks.");
                 completedTasks = new Set(); // Ensure local state is clear if no persistence
                 updateTaskCheckboxes(); // Update UI based on local (empty) state
                 window.updateProgressChart(); // Update chart based on local (empty) state
-                return;
+                return; // Exit if Firestore is not ready for loading
             }
             try {
-                // Corrected Firestore path: artifacts/{appId}/users/{userId}/userProgress/ai_course_progress_document
-                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'userProgress', 'ai_course_progress_document');
-                console.log("Firestore document reference for loading:", docRef.path);
+                // Individual user progress path: artifacts/{appId}/users/{userId}/ai_course_progress
+                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress');
                 const docSnap = await window.getDoc(docRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    console.log("Document data found for loading:", data);
                     if (data && Array.isArray(data.tasks)) {
                         completedTasks = new Set(data.tasks);
-                        console.log("Tasks loaded from Firestore for user:", window.currentUserId, "->", Array.from(completedTasks));
-                        updateTaskCheckboxes(); // Update UI after loading
-                        const statusDiv = document.createElement('div');
-                        statusDiv.textContent = "Progress loaded successfully!";
-                        statusDiv.className = "fixed bottom-4 right-4 bg-green-500 text-white p-2 rounded-md shadow-lg text-sm";
-                        document.body.appendChild(statusDiv);
-                        setTimeout(() => statusDiv.remove(), 2000);
-                    } else {
-                        console.warn("Document exists but 'tasks' field is missing or not an array.", data);
-                        completedTasks = new Set();
-                        const statusDiv = document.createElement('div');
-                        statusDiv.textContent = "No valid progress data found.";
-                        statusDiv.className = "fixed bottom-4 right-4 bg-yellow-500 text-white p-2 rounded-md shadow-lg text-sm";
-                        document.body.appendChild(statusDiv);
-                        setTimeout(() => statusDiv.remove(), 3000);
+                        console.log("Tasks loaded from Firestore for user:", window.currentUserId, completedTasks);
+                        // Update UI after loading
+                        updateTaskCheckboxes();
                     }
                 } else {
                     console.log("No saved progress found in Firestore for user:", window.currentUserId);
                     completedTasks = new Set(); // Clear local tasks if no saved data
-                    const statusDiv = document.createElement('div');
-                    statusDiv.textContent = "No previous progress found.";
-                    statusDiv.className = "fixed bottom-4 right-4 bg-blue-500 text-white p-2 rounded-md shadow-lg text-sm";
-                    document.body.appendChild(statusDiv);
-                    setTimeout(() => statusDiv.remove(), 3000);
                 }
             } catch (e) {
                 console.error("Error loading document from Firestore: ", e);
                 completedTasks = new Set(); // Clear local tasks on error
-                const statusDiv = document.createElement('div');
-                statusDiv.textContent = `Error loading progress: ${e.message}`;
-                statusDiv.className = "fixed bottom-4 right-4 bg-red-500 text-white p-2 rounded-md shadow-lg text-sm";
-                document.body.appendChild(statusDiv);
-                setTimeout(() => statusDiv.remove(), 5000);
             } finally {
                 updateTaskCheckboxes(); // Always ensure UI is updated
                 window.updateProgressChart(); // Always ensure chart is updated
             }
         };
 
+        // Real-time listener for individual user progress
+        window.setupFirestoreListener = () => {
+             if (!window.firestoreDb || !window.currentAppId || !window.currentUserId || !window.onSnapshot || !window.doc) {
+                console.warn("Firestore not fully initialized or user not authenticated. Cannot set up real-time listener.");
+                return; // Exit if Firestore is not ready for listener
+            }
+            // Individual user progress path: artifacts/{appId}/users/{userId}/ai_course_progress
+            const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress');
+            window.onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data && Array.isArray(data.tasks)) {
+                        const newCompletedTasks = new Set(data.tasks);
+                        // Only update if there are actual changes to avoid infinite loops
+                        if (JSON.stringify(Array.from(completedTasks)) !== JSON.stringify(Array.from(newCompletedTasks))) {
+                            completedTasks = newCompletedTasks;
+                            console.log("Real-time update from Firestore for user:", window.currentUserId, completedTasks);
+                            updateTaskCheckboxes();
+                            updateProgressChart();
+                        }
+                    }
+                } else {
+                    console.log("Document does not exist in real-time listener for user:", window.currentUserId);
+                    completedTasks = new Set(); // Clear tasks if document is deleted
+                    updateTaskCheckboxes();
+                    updateProgressChart();
+                }
+            }, (error) => {
+                console.error("Error listening to document: ", error);
+            });
+        };
+
+        // Function to load external HTML content
+        async function loadExternalContent(filename, targetElementId) {
+            const targetElement = document.getElementById(targetElementId);
+            if (!targetElement) {
+                console.error(`Target element with ID '${targetElementId}' not found.`);
+                return;
+            }
+            // Show loading indicator
+            targetElement.innerHTML = `<p class="text-center text-gray-500">Loading ${filename}...</p>`;
+
+            try {
+                const response = await fetch(filename);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const htmlContent = await response.text();
+                targetElement.innerHTML = htmlContent;
+            } catch (error) {
+                console.error(`Could not load ${filename}:`, error);
+                targetElement.innerHTML = `<p class="text-red-500 text-center">Failed to load content from ${filename}. Please ensure the file exists and is accessible in your GitHub repository's 'content/' subfolder.</p>`;
+            }
+        }
+
+        const templates = {
+            dashboard: `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h2 class="text-2xl font-bold mb-4 text-center">Course Overview</h2>
+                        <p class="text-gray-600 leading-relaxed">
+                            This interactive plan will guide you through six key modules, starting from Python fundamentals and progressing to building complex AI agents and integrating with leading global APIs. Your goal is not just to learn theory, but to gain practical skills that you can immediately apply in your engineering work and personal projects. Track your progress and watch your competencies grow!
+                        </p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h2 class="text-2xl font-bold mb-4 text-center">Your Progress</h2>
+                        <p class="text-center text-sm text-gray-500 mb-4">Note: Your progress is tracked individually based on your unique User ID. Persistence requires <a href="#deployment" class="text-blue-500 hover:underline">Firestore setup</a>.</p>
+                        <div class="chart-container h-64 md:h-72">
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+                        <h2 class="text-2xl font-bold mb-4 text-center">Skills Map</h2>
+                        <p class="text-center text-gray-600 mb-4">A visualization of the key competencies you will acquire.</p>
+                        <div class="chart-container h-64 md:h-80">
+                            <canvas id="skillsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `,
+            modules: `
+                <h2 class="text-2xl font-bold mb-6 text-center">Learning Modules</h2>
+                <div id="modules-container" class="space-y-4">
+                    ${courseData.modules.map((module, index) => `
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                            <div class="module-header p-4 sm:p-6 flex justify-between items-center bg-gray-50 hover:bg-gray-100" data-module-index="${index}">
+                                <h3 class="text-lg font-semibold text-gray-800">${module.title}</h3>
+                                <span class="transform transition-transform duration-300 text-blue-500">▼</span>
+                            </div>
+                            <div class="module-content">
+                                <div class="p-4 sm:p-6 border-t border-gray-200">
+                                    <p class="text-gray-600 mb-4">${module.description}</p>
+                                    <h4 class="font-semibold mb-2">Practical Tasks:</h4>
+                                    <ul class="space-y-2">
+                                        ${module.tasks.map((task, taskIndex) => `
+                                            <li class="task-item flex items-center">
+                                                <label class="flex items-center cursor-pointer">
+                                                    <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" data-task-id="${index}-${taskIndex}">
+                                                    <span class="ml-3 text-gray-700">${task}</span>
+                                                </label>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `,
+            info: `
+                <h2 class="text-2xl font-bold mb-6 text-center">Additional Information</h2>
+                <nav id="info-sub-nav" class="flex justify-center border-b border-gray-200 mb-8">
+                    <button data-sub-target="tools" class="sub-nav-link active py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🛠️ Tools</button>
+                    <button data-sub-target="resources" class="sub-nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🎓 Resources</button>
+                    <button data-sub-target="deployment" class="sub-nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🌐 Deployment</button>
+                </nav>
+                <div id="info-sub-content" class="bg-white p-6 rounded-xl shadow-md">
+                    <!-- Sub-content will be loaded here -->
+                    Loading sub-content...
+                </div>
+            `
+        };
+
+        function renderContent(target) {
+            contentArea.innerHTML = templates[target];
+            if (target === 'dashboard') {
+                renderDashboardCharts();
+            } else if (target === 'modules') {
+                attachModuleListeners();
+            } else if (target === 'info') {
+                attachInfoSubNavListeners();
+                // Load tools.html by default when Info tab is clicked
+                loadExternalContent('content/tools.html', 'info-sub-content'); // Changed to load HTML directly
+            }
+        }
+
+        // Removed renderToolsContent as we are now loading tools.html directly
+        // function renderToolsContent() {
+        //     const targetElement = document.getElementById('info-sub-content');
+        //     if (!targetElement) {
+        //         console.error("Target element for tools content not found.");
+        //         return;
+        //     }
+        //     if (typeof toolsData === 'undefined' || Object.keys(toolsData).length === 0) {
+        //         targetElement.innerHTML = `<p class="text-red-500 text-center">Tools data not loaded. Please ensure 'content/tools_data.js' exists and is correctly formatted with 'export const toolsData = ...'.</p>`;
+        //         console.error("toolsData is undefined or empty. Check content/tools_data.js import.");
+        //         return;
+        //     }
+        //     let toolsHtml = `
+        //         <h2 class="text-2xl font-bold mb-6 text-center">Tools and Technologies</h2>
+        //         <div class="space-y-8">
+        //             ${Object.entries(toolsData).map(([category, items]) => `
+        //                 <div>
+        //                     <h3 class="text-xl font-semibold mb-4 border-b-2 border-blue-300 pb-2">${category}</h3>
+        //                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        //                         ${items.map(item => `
+        //                             <div class="bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow">
+        //                                 <p class="font-medium text-gray-700">${item}</p>
+        //                             </div>
+        //                         `).join('')}
+        //                     </div>
+        //                 </div>
+        //             `).join('')}
+        //         </div>
+        //     `;
+        //     targetElement.innerHTML = toolsHtml;
+        // }
+
+        // Removed renderResourcesContent as we are now loading resources.html directly
+        // function renderResourcesContent() {
+        //     const targetElement = document.getElementById('info-sub-content');
+        //     if (!targetElement) {
+        //         console.error("Target element for resources content not found.");
+        //         return;
+        //     }
+        //     if (typeof resourcesData === 'undefined' || resourcesData.length === 0) {
+        //         targetElement.innerHTML = `<p class="text-red-500 text-center">Resources data not loaded. Please ensure 'content/resources_data.js' exists and is correctly formatted with 'export const resourcesData = ...'.</p>`;
+        //         console.error("resourcesData is undefined or empty. Check content/resources_data.js import.");
+        //         return;
+        //     }
+        //     let resourcesHtml = `
+        //         <h2 class="text-2xl font-bold mb-6 text-center">Recommended Resources and Courses</h2>
+        //         <p class="text-center text-gray-600 mb-8">A selection of Udemy courses for in-depth study of topics.</p>
+        //         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        //             ${resourcesData.map(resource => `
+        //                 <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
+        //                     <h3 class="font-bold text-lg text-gray-800">${resource.title}</h3>
+        //                     <p class="text-sm text-gray-500 mt-1 mb-4">Author: ${resource.author}</p>
+        //                     <div class="mt-auto">
+        //                         <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+        //                             ${resource.category}
+        //                         </span>
+        //                     </div>
+        //                 </div>
+        //             `).join('')}
+        //         </div>
+        //     `;
+        //     targetElement.innerHTML = resourcesHtml;
+        // }
+
+
+        window.updateProgressChart = () => { // Made global for access from Firebase auth
+            if (!document.getElementById('progressChart')) return; // Ensure element exists
+            const totalTasks = courseData.modules.reduce((acc, module) => acc + module.tasks.length, 0);
+            const completedCount = completedTasks.size;
+
+            const progressCtx = document.getElementById('progressChart').getContext('2d');
+            if (progressChart) progressChart.destroy(); // Destroy existing chart before creating a new one
+            progressChart = new Chart(progressCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'Remaining'],
+                    datasets: [{
+                        data: [completedCount, totalTasks - completedCount],
+                        backgroundColor: ['#3b82f6', '#e5e7eb'],
+                        borderColor: '#f8f9fa',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    }
+                }
+            });
+        };
+
+        function renderDashboardCharts() {
+            window.updateProgressChart(); // Call the global function
+            
+            if (!document.getElementById('skillsChart')) return; // Ensure element exists
+            const skillsCtx = document.getElementById('skillsChart').getContext('2d');
+            if (skillsChart) skillsChart.destroy(); // Destroy existing chart before creating a new one
+            skillsChart = new Chart(skillsCtx, {
+                type: 'radar',
+                data: {
+                    labels: courseData.skills.labels,
+                    datasets: [{
+                        label: 'Competency Level',
+                        data: courseData.skills.values,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#d1d5db' },
+                            grid: { color: '#e5e7eb' },
+                            pointLabels: { font: { size: 12 }, color: '#4b5563' },
+                            ticks: {
+                                backdropColor: 'transparent',
+                                stepSize: 2,
+                                font: { weight: 'bold' }
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
         // Updates the checkboxes based on the completedTasks Set
         function updateTaskCheckboxes() {
             const taskCheckboxes = document.querySelectorAll('.task-item input[type="checkbox"]');
-            console.log("Updating checkboxes. Current completedTasks:", completedTasks);
             taskCheckboxes.forEach(checkbox => {
                 const taskId = checkbox.dataset.taskId;
-                const isCompleted = completedTasks.has(taskId);
-                checkbox.checked = isCompleted;
+                checkbox.checked = completedTasks.has(taskId);
                 const span = checkbox.nextElementSibling;
-                if (isCompleted) {
+                if (checkbox.checked) {
                     span.classList.add('line-through', 'text-gray-400');
                     span.classList.remove('text-gray-700');
                 } else {
@@ -494,7 +729,6 @@
 
         function attachModuleListeners() {
             const moduleHeaders = document.querySelectorAll('.module-header');
-            console.log("Attaching module listeners.");
             moduleHeaders.forEach(header => {
                 header.addEventListener('click', () => {
                     const content = header.nextElementSibling;
@@ -511,19 +745,16 @@
                         content.style.maxHeight = content.scrollHeight + "px";
                         icon.style.transform = 'rotate(180deg)';
                     }
-                    // Crucial: Update checkboxes AFTER module content is potentially expanded
-                    updateTaskCheckboxes(); 
                 });
             });
 
             const taskCheckboxes = document.querySelectorAll('.task-item input[type="checkbox"]');
             taskCheckboxes.forEach(checkbox => {
                 const taskId = checkbox.dataset.taskId;
-                // Initial state update when modules are first rendered
-                const isCompleted = completedTasks.has(taskId);
-                checkbox.checked = isCompleted;
+                // Initial state update
+                checkbox.checked = completedTasks.has(taskId);
                 const span = checkbox.nextElementSibling;
-                if (isCompleted) {
+                if (checkbox.checked) {
                     span.classList.add('line-through', 'text-gray-400');
                     span.classList.remove('text-gray-700');
                 } else {
