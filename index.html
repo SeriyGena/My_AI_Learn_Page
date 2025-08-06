@@ -15,9 +15,9 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Import external data modules
-        import { toolsData } from './content/tools_data.js';
-        import { resourcesData } from './content/resources_data.js';
+        // Removed direct import of toolsData and resourcesData as we will load their HTML directly
+        // import { toolsData } from './content/tools_data.js';
+        // import { resourcesData } from './content/resources_data.js';
 
         // Your web app's Firebase configuration (obtained from Firebase Project Settings)
         // This configuration is hardcoded here for deployment on GitHub Pages.
@@ -368,9 +368,9 @@
                 labels: ['3D Visualization', 'Data Analysis', 'Machine Learning', 'LLM & Prompting', 'Agent Development', 'API Integration'],
                 values: [8, 7, 9, 10, 9, 8]
             },
-            // The tools and resources data are now imported from separate files.
-            // These properties are kept here as placeholders to maintain the structure of courseData if needed elsewhere,
-            // but their content will be dynamically loaded for display.
+            // The tools and resources data are now NOT imported from separate JS files for dynamic rendering.
+            // They are loaded as static HTML files. Keeping these properties as empty objects/arrays
+            // to avoid errors if other parts of the code still reference them (though they shouldn't for rendering).
             tools: {},
             resources: {}
         };
@@ -564,76 +564,74 @@
                 attachModuleListeners();
             } else if (target === 'info') {
                 attachInfoSubNavListeners();
-                // Load tools content by default when Info tab is clicked
-                renderToolsContent();
+                // Load tools.html by default when Info tab is clicked
+                loadExternalContent('content/tools.html', 'info-sub-content'); // Changed to load HTML directly
             }
         }
 
-        // Function to render Tools content directly from imported data
-        function renderToolsContent() {
-            const targetElement = document.getElementById('info-sub-content');
-            if (!targetElement) {
-                console.error("Target element for tools content not found.");
-                return;
-            }
-            // Check if toolsData is available and not empty
-            if (typeof toolsData === 'undefined' || Object.keys(toolsData).length === 0) {
-                targetElement.innerHTML = `<p class="text-red-500 text-center">Tools data not loaded. Please ensure 'content/tools_data.js' exists and is correctly formatted with 'export const toolsData = ...'.</p>`;
-                console.error("toolsData is undefined or empty. Check content/tools_data.js import.");
-                return;
-            }
-            let toolsHtml = `
-                <h2 class="text-2xl font-bold mb-6 text-center">Tools and Technologies</h2>
-                <div class="space-y-8">
-                    ${Object.entries(toolsData).map(([category, items]) => `
-                        <div>
-                            <h3 class="text-xl font-semibold mb-4 border-b-2 border-blue-300 pb-2">${category}</h3>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                                ${items.map(item => `
-                                    <div class="bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow">
-                                        <p class="font-medium text-gray-700">${item}</p>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            targetElement.innerHTML = toolsHtml;
-        }
+        // Removed renderToolsContent as we are now loading tools.html directly
+        // function renderToolsContent() {
+        //     const targetElement = document.getElementById('info-sub-content');
+        //     if (!targetElement) {
+        //         console.error("Target element for tools content not found.");
+        //         return;
+        //     }
+        //     if (typeof toolsData === 'undefined' || Object.keys(toolsData).length === 0) {
+        //         targetElement.innerHTML = `<p class="text-red-500 text-center">Tools data not loaded. Please ensure 'content/tools_data.js' exists and is correctly formatted with 'export const toolsData = ...'.</p>`;
+        //         console.error("toolsData is undefined or empty. Check content/tools_data.js import.");
+        //         return;
+        //     }
+        //     let toolsHtml = `
+        //         <h2 class="text-2xl font-bold mb-6 text-center">Tools and Technologies</h2>
+        //         <div class="space-y-8">
+        //             ${Object.entries(toolsData).map(([category, items]) => `
+        //                 <div>
+        //                     <h3 class="text-xl font-semibold mb-4 border-b-2 border-blue-300 pb-2">${category}</h3>
+        //                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        //                         ${items.map(item => `
+        //                             <div class="bg-white p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow">
+        //                                 <p class="font-medium text-gray-700">${item}</p>
+        //                             </div>
+        //                         `).join('')}
+        //                     </div>
+        //                 </div>
+        //             `).join('')}
+        //         </div>
+        //     `;
+        //     targetElement.innerHTML = toolsHtml;
+        // }
 
-        // Function to render Resources content directly from imported data
-        function renderResourcesContent() {
-            const targetElement = document.getElementById('info-sub-content');
-            if (!targetElement) {
-                console.error("Target element for resources content not found.");
-                return;
-            }
-            // Check if resourcesData is available and not empty
-            if (typeof resourcesData === 'undefined' || resourcesData.length === 0) {
-                targetElement.innerHTML = `<p class="text-red-500 text-center">Resources data not loaded. Please ensure 'content/resources_data.js' exists and is correctly formatted with 'export const resourcesData = ...'.</p>`;
-                console.error("resourcesData is undefined or empty. Check content/resources_data.js import.");
-                return;
-            }
-            let resourcesHtml = `
-                <h2 class="text-2xl font-bold mb-6 text-center">Recommended Resources and Courses</h2>
-                <p class="text-center text-gray-600 mb-8">A selection of Udemy courses for in-depth study of topics.</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    ${resourcesData.map(resource => `
-                        <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
-                            <h3 class="font-bold text-lg text-gray-800">${resource.title}</h3>
-                            <p class="text-sm text-gray-500 mt-1 mb-4">Author: ${resource.author}</p>
-                            <div class="mt-auto">
-                                <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
-                                    ${resource.category}
-                                </span>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            targetElement.innerHTML = resourcesHtml;
-        }
+        // Removed renderResourcesContent as we are now loading resources.html directly
+        // function renderResourcesContent() {
+        //     const targetElement = document.getElementById('info-sub-content');
+        //     if (!targetElement) {
+        //         console.error("Target element for resources content not found.");
+        //         return;
+        //     }
+        //     if (typeof resourcesData === 'undefined' || resourcesData.length === 0) {
+        //         targetElement.innerHTML = `<p class="text-red-500 text-center">Resources data not loaded. Please ensure 'content/resources_data.js' exists and is correctly formatted with 'export const resourcesData = ...'.</p>`;
+        //         console.error("resourcesData is undefined or empty. Check content/resources_data.js import.");
+        //         return;
+        //     }
+        //     let resourcesHtml = `
+        //         <h2 class="text-2xl font-bold mb-6 text-center">Recommended Resources and Courses</h2>
+        //         <p class="text-center text-gray-600 mb-8">A selection of Udemy courses for in-depth study of topics.</p>
+        //         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        //             ${resourcesData.map(resource => `
+        //                 <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
+        //                     <h3 class="font-bold text-lg text-gray-800">${resource.title}</h3>
+        //                     <p class="text-sm text-gray-500 mt-1 mb-4">Author: ${resource.author}</p>
+        //                     <div class="mt-auto">
+        //                         <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+        //                             ${resource.category}
+        //                         </span>
+        //                     </div>
+        //                 </div>
+        //             `).join('')}
+        //         </div>
+        //     `;
+        //     targetElement.innerHTML = resourcesHtml;
+        // }
 
 
         window.updateProgressChart = () => { // Made global for access from Firebase auth
@@ -791,14 +789,8 @@
                     subNavLinks.forEach(l => l.classList.remove('active'));
                     e.target.classList.add('active');
                     
-                    // Load content based on sub-target
-                    if (subTarget === 'tools') {
-                        renderToolsContent();
-                    } else if (subTarget === 'resources') {
-                        renderResourcesContent();
-                    } else { // Default to loading HTML for deployment
-                        loadExternalContent(`content/${subTarget}.html`, 'info-sub-content');
-                    }
+                    // Load content based on sub-target, now consistently loading HTML files
+                    loadExternalContent(`content/${subTarget}.html`, 'info-sub-content');
                 });
             });
              // Ensure 'tools' is active by default when 'info' tab is rendered
