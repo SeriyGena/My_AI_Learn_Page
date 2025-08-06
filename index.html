@@ -28,73 +28,115 @@
         };
 
         // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        let app, db, auth;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            // Export Firebase instances and Firestore functions for use in global scope
+            window.firebaseApp = app;
+            window.firestoreDb = db;
+            window.firebaseAuth = auth;
+            window.currentAppId = firebaseConfig.appId; // Use appId from your specific configuration
+            window.initialAuthToken = null; // Not needed for GitHub Pages, as we're doing anonymous sign-in directly
 
-        // Export Firebase instances and Firestore functions for use in global scope
-        window.firebaseApp = app;
-        window.firestoreDb = db;
-        window.firebaseAuth = auth;
-        window.currentAppId = firebaseConfig.appId; // Use appId from your specific configuration
-        window.initialAuthToken = null; // Not needed for GitHub Pages, as we're doing anonymous sign-in directly
+            // Export Firestore functions globally
+            window.doc = doc;
+            window.setDoc = setDoc;
+            window.getDoc = getDoc;
+            window.onSnapshot = onSnapshot;
 
-        // Export Firestore functions globally
-        window.doc = doc;
-        window.setDoc = setDoc;
-        window.getDoc = getDoc;
-        window.onSnapshot = onSnapshot;
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+            // If Firebase fails to initialize, ensure global variables are null to prevent further errors
+            window.firebaseApp = null;
+            window.firestoreDb = null;
+            window.firebaseAuth = null;
+            window.currentAppId = null;
+            window.initialAuthToken = null;
+            window.doc = null;
+            window.setDoc = null;
+            window.getDoc = null;
+            window.onSnapshot = null;
+        }
+
 
         // Authentication and data loading
-        onAuthStateChanged(auth, async (user) => {
-            const authStatusElement = document.getElementById('auth-status');
-            if (user) {
-                console.log("User signed in:", user.uid);
-                window.currentUserId = user.uid; // Make userId available globally
-                if (authStatusElement) {
-                    authStatusElement.textContent = `Signed in as Anonymous User (ID: ${user.uid.substring(0, 8)}...)`;
-                    authStatusElement.classList.remove('text-red-500');
-                    authStatusElement.classList.add('text-green-600');
-                }
-                // Load completed tasks from Firestore after authentication
-                await window.loadCompletedTasks();
-                window.updateProgressChart(); // Update chart after tasks are loaded
-            } else {
-                console.log("No user signed in. Attempting anonymous sign-in.");
-                if (authStatusElement) {
-                    authStatusElement.textContent = 'Not Signed In / Log In';
-                    authStatusElement.classList.remove('text-green-600');
-                    authStatusElement.classList.add('text-red-500');
-                }
-                try {
-                    // We're always attempting anonymous sign-in for simplicity
-                    await signInAnonymously(auth);
-                } catch (error) {
-                    console.error("Error during authentication:", error);
+        if (auth) { // Only run if auth was successfully initialized
+            onAuthStateChanged(auth, async (user) => {
+                const authStatusElement = document.getElementById('auth-status');
+                const userIdDisplayElement = document.getElementById('user-id-display');
+
+                if (user) {
+                    console.log("User signed in:", user.uid);
+                    window.currentUserId = user.uid; // Make userId available globally
                     if (authStatusElement) {
-                        authStatusElement.textContent = `Authentication Error: ${error.message}`;
+                        authStatusElement.textContent = `Signed in as Anonymous User`;
+                        authStatusElement.classList.remove('text-red-500');
+                        authStatusElement.classList.add('text-green-600');
+                    }
+                    if (userIdDisplayElement) {
+                        userIdDisplayElement.textContent = `Your User ID: ${user.uid}`; // Display full user ID
+                    }
+                    // Load completed tasks from Firestore after authentication
+                    await window.loadCompletedTasks();
+                    window.updateProgressChart(); // Update chart after tasks are loaded
+                } else {
+                    console.log("No user signed in. Attempting anonymous sign-in.");
+                    if (authStatusElement) {
+                        authStatusElement.textContent = 'Not Signed In / Log In';
                         authStatusElement.classList.remove('text-green-600');
                         authStatusElement.classList.add('text-red-500');
                     }
+                    if (userIdDisplayElement) {
+                        userIdDisplayElement.textContent = 'Your User ID: N/A';
+                    }
+                    try {
+                        // We're always attempting anonymous sign-in for simplicity
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error("Error during authentication:", error);
+                        if (authStatusElement) {
+                            authStatusElement.textContent = `Authentication Error: ${error.message}`;
+                            authStatusElement.classList.remove('text-green-600');
+                            authStatusElement.classList.add('text-red-500');
+                        }
+                    }
                 }
+                // Hide loading indicator once authentication state is determined and initial data loaded
+                const loadingIndicator = document.getElementById('loading-indicator');
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+            });
+        } else { // If auth initialization failed
+            const authStatusElement = document.getElementById('auth-status');
+            const userIdDisplayElement = document.getElementById('user-id-display');
+            if (authStatusElement) {
+                authStatusElement.textContent = 'Firebase Not Configured / Connection Failed';
+                authStatusElement.classList.remove('text-green-600');
+                authStatusElement.classList.add('text-red-500');
             }
-            // Hide loading indicator once authentication state is determined and initial data loaded
+            if (userIdDisplayElement) {
+                userIdDisplayElement.textContent = 'Your User ID: Not Available';
+            }
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
                 loadingIndicator.style.display = 'none';
             }
-        });
+        }
     </script>
 
     <!-- Chosen Palette: Calm Harmony Neutrals -->
     <!-- Application Structure Plan: I designed the application as an interactive dashboard with tabs (Home, Modules, Tools, Resources, Deployment). This structure provides non-linear access to information, allowing the user to easily switch between a general progress overview, detailed module content, and reference materials. This is more convenient and intuitive than scrolling through a long document, as it encourages active exploration and allows focusing on specific topics of interest at any time. -->
     <!-- Visualization & Content Choices:
-        1. Report Information: Overall course structure and tasks -> Goal: Визуализация прогресса и приобретаемых навыков -> Visualization: Doughnut chart (Chart.js) for overall progress and Radar chart (Chart.js) for skills. -> Interactivity: Progress chart updates when tasks are marked as completed. -> Justification: Instant visual feedback motivates and provides a clear understanding of the journey completed and future competencies.
+        1. Report Information: Overall course structure and tasks -> Goal: Visualize progress and acquired skills -> Visualization: Doughnut chart (Chart.js) for overall progress and Radar chart (Chart.js) for skills. -> Interactivity: Progress chart updates when tasks are marked as completed. -> Justification: Instant visual feedback motivates and provides a clear understanding of the journey completed and future competencies.
         2. Report Information: Module sections -> Goal: Structuring learning content -> Presentation: Interactive accordion cards. -> Interactivity: Clicking on a module header expands its detailed content. -> Justification: Prevents information overload ("wall of text"), making navigation through course content manageable and clear. Implemented with JS.
         3. Report Information: Lists of libraries, APIs, LLMs -> Goal: Create a quick reference guide -> Presentation: Styled cards in a grid layout. -> Interactivity: Clicking on a card could display additional information in the future. -> Justification: Transforms simple lists into a useful, easily browsable reference section. Implemented with HTML/Tailwind.
         4. New Section: Site Deployment -> Goal: Provide practical steps for hosting the web application -> Presentation: Detailed list of steps for GitHub Pages, Netlify, Vercel. -> Interactivity: Informational, with clear steps for user action outside the app. -> Justification: Addresses user's direct query about deployment, making the course plan actionable beyond just content. Implemented with HTML/Tailwind.
-        5. New Feature: Shared Progress Tracking -> Goal: Persist and share checklist status across users -> Presentation: Checkboxes within module tasks, progress charts. -> Interactivity: Checkbox clicks update Firestore; changes from Firestore update UI in real-time. -> Justification: Addresses user's request for shared, persistent progress without complex user management. Implemented with Firestore.
-        6. New Feature: Authentication Status Display -> Goal: Visually inform user about authentication status -> Presentation: Small text indicator in the header. -> Interactivity: Updates dynamically based on Firebase auth state. -> Justification: Addresses user's request to show "Anonymous access" or "Log In" on every page.
+        5. New Feature: Individual Progress Tracking -> Goal: Persist and track checklist status for each unique user -> Presentation: Checkboxes within module tasks, progress charts. -> Interactivity: Checkbox clicks update Firestore for the specific user's document; changes update UI. -> Justification: Addresses user's request for individual, persistent progress.
+        6. New Feature: Authentication Status Display & User ID -> Goal: Visually inform user about authentication status and their unique ID -> Presentation: Small text indicator in the header, displaying full user ID. -> Interactivity: Updates dynamically based on Firebase auth state. -> Justification: Clearly shows the user their unique identifier for tracking their own progress.
+        7. New Feature: Local Progress Fallback -> Goal: Allow functionality to be seen even without Firebase setup. -> Presentation: Checkbox and chart updates. -> Interactivity: Updates `completedTasks` Set and UI locally. -> Justification: Addresses user's request to preserve functionality visibility without immediate Firestore setup.
     -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
@@ -150,6 +192,7 @@
             <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Eng. skills for non coder test_01</h1>
             <p class="text-md text-gray-600 mt-2">Your Personal Interactive Learning Plan</p>
             <div id="auth-status" class="text-sm mt-2 font-medium">Loading authentication status...</div>
+            <div id="user-id-display" class="text-xs text-gray-500 mt-1">Your User ID: N/A</div>
         </header>
 
         <nav class="flex justify-center border-b border-gray-200 mb-8">
@@ -258,53 +301,65 @@
 
         // Firestore functions
         window.saveCompletedTasks = async () => {
+            // Always update local state and UI first
+            updateTaskCheckboxes();
+            window.updateProgressChart();
+
             if (!window.firestoreDb || !window.currentAppId || !window.currentUserId || !window.doc || !window.setDoc) {
-                console.warn("Firestore not initialized or user not authenticated or Firestore functions not available. Cannot save tasks.");
-                return;
+                console.warn("Firestore not fully initialized or user not authenticated. Progress will not be persisted.");
+                return; // Exit if Firestore is not ready for persistence
             }
             try {
-                // Corrected path for Firestore document reference
-                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'public_data', 'ai_course_progress');
+                // Individual user progress path: artifacts/{appId}/users/{userId}/ai_course_progress
+                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress');
                 await window.setDoc(docRef, { tasks: Array.from(completedTasks) }, { merge: true });
-                console.log("Tasks saved to Firestore!");
+                console.log("Tasks saved to Firestore for user:", window.currentUserId);
             } catch (e) {
-                console.error("Error saving document: ", e);
+                console.error("Error saving document to Firestore: ", e);
             }
         };
 
         window.loadCompletedTasks = async () => {
-            if (!window.firestoreDb || !window.currentAppId || !window.getDoc || !window.doc) {
-                console.warn("Firestore not initialized or Firestore functions not available. Cannot load tasks.");
-                return;
+            if (!window.firestoreDb || !window.currentAppId || !window.currentUserId || !window.getDoc || !window.doc) {
+                console.warn("Firestore not fully initialized or user not authenticated. Cannot load persisted tasks.");
+                completedTasks = new Set(); // Ensure local state is clear if no persistence
+                updateTaskCheckboxes(); // Update UI based on local (empty) state
+                window.updateProgressChart(); // Update chart based on local (empty) state
+                return; // Exit if Firestore is not ready for loading
             }
             try {
-                // Corrected path for Firestore document reference
-                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'public_data', 'ai_course_progress');
+                // Individual user progress path: artifacts/{appId}/users/{userId}/ai_course_progress
+                const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress');
                 const docSnap = await window.getDoc(docRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     if (data && Array.isArray(data.tasks)) {
                         completedTasks = new Set(data.tasks);
-                        console.log("Tasks loaded from Firestore:", completedTasks);
+                        console.log("Tasks loaded from Firestore for user:", window.currentUserId, completedTasks);
                         // Update UI after loading
                         updateTaskCheckboxes();
                     }
                 } else {
-                    console.log("No saved progress found in Firestore.");
+                    console.log("No saved progress found in Firestore for user:", window.currentUserId);
+                    completedTasks = new Set(); // Clear local tasks if no saved data
                 }
             } catch (e) {
-                console.error("Error loading document: ", e);
+                console.error("Error loading document from Firestore: ", e);
+                completedTasks = new Set(); // Clear local tasks on error
+            } finally {
+                updateTaskCheckboxes(); // Always ensure UI is updated
+                window.updateProgressChart(); // Always ensure chart is updated
             }
         };
 
-        // Real-time listener for shared progress
+        // Real-time listener for individual user progress
         window.setupFirestoreListener = () => {
-             if (!window.firestoreDb || !window.currentAppId || !window.onSnapshot || !window.doc) {
-                console.warn("Firestore not initialized or Firestore functions not available. Cannot set up listener.");
-                return;
+             if (!window.firestoreDb || !window.currentAppId || !window.currentUserId || !window.onSnapshot || !window.doc) {
+                console.warn("Firestore not fully initialized or user not authenticated. Cannot set up real-time listener.");
+                return; // Exit if Firestore is not ready for listener
             }
-            // Corrected path for Firestore document reference
-            const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'public_data', 'ai_course_progress');
+            // Individual user progress path: artifacts/{appId}/users/{userId}/ai_course_progress
+            const docRef = window.doc(window.firestoreDb, 'artifacts', window.currentAppId, 'users', window.currentUserId, 'ai_course_progress');
             window.onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
@@ -313,13 +368,13 @@
                         // Only update if there are actual changes to avoid infinite loops
                         if (JSON.stringify(Array.from(completedTasks)) !== JSON.stringify(Array.from(newCompletedTasks))) {
                             completedTasks = newCompletedTasks;
-                            console.log("Real-time update from Firestore:", completedTasks);
+                            console.log("Real-time update from Firestore for user:", window.currentUserId, completedTasks);
                             updateTaskCheckboxes();
                             updateProgressChart();
                         }
                     }
                 } else {
-                    console.log("Document does not exist in real-time listener.");
+                    console.log("Document does not exist in real-time listener for user:", window.currentUserId);
                     completedTasks = new Set(); // Clear tasks if document is deleted
                     updateTaskCheckboxes();
                     updateProgressChart();
@@ -341,7 +396,7 @@
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-md">
                         <h2 class="text-2xl font-bold mb-4 text-center">Your Progress</h2>
-                        <p class="text-center text-sm text-gray-500 mb-4">Note: This feature is under development and requires Firestore setup for persistence.</p>
+                        <p class="text-center text-sm text-gray-500 mb-4">Note: Your progress is tracked individually based on your unique User ID. Persistence requires <a href="#deployment" class="text-blue-500 hover:underline">Firestore setup</a>.</p>
                         <div class="chart-container h-64 md:h-72">
                             <canvas id="progressChart"></canvas>
                         </div>
@@ -632,9 +687,7 @@
                     } else {
                         completedTasks.delete(taskId);
                     }
-                    await window.saveCompletedTasks(); // Save to Firestore
-                    window.updateProgressChart(); // Update chart
-                    updateTaskCheckboxes(); // Update UI for line-through
+                    await window.saveCompletedTasks(); // Save to Firestore (or locally if not configured)
                 });
             });
         }
