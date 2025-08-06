@@ -72,7 +72,9 @@
             onAuthStateChanged(auth, async (user) => {
                 const authStatusElement = document.getElementById('auth-status');
                 const userIdDisplayElement = document.getElementById('user-id-display');
-                const authControlsElement = document.getElementById('auth-controls');
+                const authControlsLeftElement = document.getElementById('auth-controls-left');
+                const authControlsRightElement = document.getElementById('auth-controls-right');
+
 
                 if (user) {
                     console.log("User signed in:", user.uid);
@@ -85,9 +87,9 @@
                     if (userIdDisplayElement) {
                         userIdDisplayElement.textContent = `Your User ID: ${user.uid}`; // Display full user ID
                     }
-                    if (authControlsElement) {
-                        authControlsElement.innerHTML = `
-                            <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Log Out</button>
+                    if (authControlsRightElement) {
+                        authControlsRightElement.innerHTML = `
+                            <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded-md text-sm transition-colors">Log Out</button>
                         `;
                         document.getElementById('logout-button').addEventListener('click', async () => {
                             try {
@@ -102,6 +104,9 @@
                             }
                         });
                     }
+                    if (authControlsLeftElement) {
+                        authControlsLeftElement.innerHTML = ''; // Clear left controls if logged in
+                    }
                     // Load completed tasks from Firestore after authentication
                     await window.loadCompletedTasks();
                     window.updateProgressChart(); // Update chart after tasks are loaded
@@ -115,13 +120,12 @@
                     if (userIdDisplayElement) {
                         userIdDisplayElement.textContent = 'Your User ID: N/A';
                     }
-                    if (authControlsElement) {
-                        authControlsElement.innerHTML = `
-                            <input type="email" id="email-input" placeholder="Email" class="p-2 border rounded-md w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">
-                            <input type="password" id="password-input" placeholder="Password" class="p-2 border rounded-md w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">
-                            <button id="login-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">Log In</button>
-                            <button id="signup-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto">Sign Up</button>
-                            <button id="anonymous-login-button" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto mt-2">Continue Anonymously</button>
+                    if (authControlsLeftElement) {
+                        authControlsLeftElement.innerHTML = `
+                            <input type="email" id="email-input" placeholder="Email" class="p-1 border rounded-md w-28 text-sm" value="">
+                            <input type="password" id="password-input" placeholder="Password" class="p-1 border rounded-md w-28 text-sm" value="">
+                            <button id="login-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded-md text-sm transition-colors w-20">Log In</button>
+                            <button id="signup-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded-md text-sm transition-colors w-20 mt-1">Sign Up</button>
                         `;
                         document.getElementById('login-button').addEventListener('click', async () => {
                             const email = document.getElementById('email-input').value;
@@ -145,6 +149,11 @@
                                 authStatusElement.textContent = `Signup Error: ${error.message}`;
                             }
                         });
+                    }
+                    if (authControlsRightElement) {
+                        authControlsRightElement.innerHTML = `
+                            <button id="anonymous-login-button" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-2 rounded-md text-xs transition-colors w-24">Continue Anonymously</button>
+                        `;
                         document.getElementById('anonymous-login-button').addEventListener('click', async () => {
                             try {
                                 await signInAnonymously(auth);
@@ -155,9 +164,6 @@
                             }
                         });
                     }
-                    // Attempt anonymous sign-in by default if no explicit user is logged in
-                    // This is handled by the onAuthStateChanged callback itself, which will trigger signInAnonymously
-                    // if no user is found. No need for an explicit call here unless we want to force it immediately.
                 }
                 // Hide loading indicator once authentication state is determined and initial data loaded
                 const loadingIndicator = document.getElementById('loading-indicator');
@@ -168,7 +174,8 @@
         } else { // If auth initialization failed
             const authStatusElement = document.getElementById('auth-status');
             const userIdDisplayElement = document.getElementById('user-id-display');
-            const authControlsElement = document.getElementById('auth-controls');
+            const authControlsLeftElement = document.getElementById('auth-controls-left');
+            const authControlsRightElement = document.getElementById('auth-controls-right');
 
             if (authStatusElement) {
                 authStatusElement.textContent = 'Firebase Not Configured / Connection Failed';
@@ -178,10 +185,13 @@
             if (userIdDisplayElement) {
                 userIdDisplayElement.textContent = 'Your User ID: Not Available';
             }
-            if (authControlsElement) {
-                authControlsElement.innerHTML = `
+            if (authControlsLeftElement) {
+                authControlsLeftElement.innerHTML = `
                     <p class="text-red-500 text-sm">Authentication features are unavailable due to Firebase configuration issues.</p>
                 `;
+            }
+            if (authControlsRightElement) {
+                authControlsRightElement.innerHTML = ''; // Clear right controls if Firebase failed
             }
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
@@ -248,14 +258,24 @@
 
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         <header class="relative mb-8 flex flex-col items-center">
-            <div class="absolute top-0 right-0 text-right">
-                <div id="auth-status" class="text-sm mt-2 font-medium">Loading authentication status...</div>
-                <div id="user-id-display" class="text-xs text-gray-500 mt-1 hidden">Your User ID: N/A</div>
-                <div id="auth-controls" class="flex flex-col sm:flex-row justify-end items-center mt-4 space-y-2 sm:space-y-0 sm:space-x-2">
-                    <!-- Auth controls will be injected here by JavaScript -->
+            <!-- Top Left: Email/Password Login & Signup -->
+            <div class="absolute top-0 left-0 text-left p-2"> <!-- Added p-2 for some padding -->
+                <div id="auth-controls-left" class="flex flex-col items-start space-y-1">
+                    <!-- Email, Password, Login, Signup injected here by JS -->
                 </div>
             </div>
-            <div class="text-center">
+
+            <!-- Top Right: Auth Status & Anonymous Login/Logout -->
+            <div class="absolute top-0 right-0 text-right p-2 flex flex-col items-end">
+                <div id="auth-status" class="text-sm mt-0 font-medium">Loading authentication status...</div>
+                <div id="user-id-display" class="text-xs text-gray-500 mt-0 hidden">Your User ID: N/A</div>
+                <div id="auth-controls-right" class="flex flex-col sm:flex-row items-end mt-1 space-y-1 sm:space-y-0 sm:space-x-1">
+                    <!-- Anonymous login/logout button injected here by JS -->
+                </div>
+            </div>
+
+            <!-- Centered Main Title -->
+            <div class="text-center w-full">
                 <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Eng. skills for non coder</h1>
                 <p class="text-md text-gray-600 mt-2">Your Personal Interactive Learning Plan</p>
             </div>
@@ -455,6 +475,9 @@
                 console.error(`Target element with ID '${targetElementId}' not found.`);
                 return;
             }
+            // Show loading indicator
+            targetElement.innerHTML = `<p class="text-center text-gray-500">Loading ${filename}...</p>`;
+
             try {
                 const response = await fetch(filename);
                 if (!response.ok) {
@@ -464,7 +487,7 @@
                 targetElement.innerHTML = htmlContent;
             } catch (error) {
                 console.error(`Could not load ${filename}:`, error);
-                targetElement.innerHTML = `<p class="text-red-500 text-center">Failed to load content from ${filename}. Please ensure the file exists and is accessible.</p>`;
+                targetElement.innerHTML = `<p class="text-red-500 text-center">Failed to load content from ${filename}. Please ensure the file exists and is accessible in your GitHub repository's root directory.</p>`;
             }
         }
 
