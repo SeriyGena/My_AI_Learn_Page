@@ -33,7 +33,14 @@
                 </p>
                 <ol class="list-decimal list-inside space-y-4 text-gray-700">
                     <li>
-                        <strong>Save your HTML file.</strong> Save the entire code from this page and the other related files (<code>tools.html</code>, <code>resources.html</code>, etc.) into your project folder. The main file must be named <code>index.html</code>.
+                        <strong>Save your HTML file.</strong> Save the entire code from this page and the other related files into your project folder. The main file must be named <code>index.html</code>.
+                        <p class="text-gray-600 mt-3 mb-2">Your project folder should have the following structure:</p>
+                        <!-- This preformatted block displays the file structure schematic -->
+                        <pre class="bg-gray-200 p-4 rounded-md text-sm overflow-x-auto"><code>your-github-repo/
+├── index.html
+└── content/
+    ├── resources.html   &lt;-- HTML content for Resources tab
+    └── deployment.html  &lt;-- HTML content for Deployment tab</code></pre>
                     </li>
                     <li>
                         <strong>Create a GitHub account.</strong> If you don't have one, sign up at <a href="https://github.com" target="_blank" class="text-blue-500 hover:underline">github.com</a>.
@@ -42,7 +49,7 @@
                         <strong>Create a new repository.</strong> Click the "+" icon in the top right corner and select "New repository". Give it a name (e.g., <code>my-ai-course</code>). Make sure it's <strong>Public</strong>. Click "Create repository".
                     </li>
                     <li>
-                        <strong>Upload your project files.</strong> In your newly created repository, click "Add file" -> "Upload files". Drag and drop all your project files and the entire <code>content</code> folder into the upload area. Scroll down and click "Commit changes".
+                        <strong>Upload your project files.</strong> In your newly created repository, click "Add file" -> "Upload files". Drag and drop your <code>index.html</code> file and the entire <code>content</code> folder into the upload area. Scroll down and click "Commit changes".
                     </li>
                     <li>
                         <strong>Enable GitHub Pages.</strong> Go to the "Settings" tab in your repository. In the left sidebar, click "Pages". Under "Build and deployment", for "Source", select the branch where your files are located (usually <code>main</code>). Ensure the folder is set to <code>/ (root)</code>. Click "Save".
