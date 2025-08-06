@@ -15,10 +15,16 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global variables provided by the Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Your web app's Firebase configuration (obtained from Firebase Project Settings)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7oxoQua0Wgqzl2IbwL1Uzx-N7hcAnuLw",
+            authDomain: "ai-skills-for-non-coder-engs.firebaseapp.com",
+            projectId: "ai-skills-for-non-coder-engs",
+            storageBucket: "ai-skills-for-non-coder-engs.firebasestorage.app",
+            messagingSenderId: "1026548286381",
+            appId: "1:1026548286381:web:706b379a6ac131dfb2d724",
+            measurementId: "G-6QL2CKNTX6" // Measurement ID is optional for basic Firebase usage
+        };
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -29,8 +35,8 @@
         window.firebaseApp = app;
         window.firestoreDb = db;
         window.firebaseAuth = auth;
-        window.currentAppId = appId;
-        window.initialAuthToken = initialAuthToken; // Make token accessible for initial sign-in logic
+        window.currentAppId = firebaseConfig.appId; // Use appId from your specific configuration
+        window.initialAuthToken = null; // Not needed for GitHub Pages, as we're doing anonymous sign-in directly
 
         // Export Firestore functions globally
         window.doc = doc;
@@ -60,11 +66,8 @@
                     authStatusElement.classList.add('text-red-500');
                 }
                 try {
-                    if (window.initialAuthToken) {
-                        await signInWithCustomToken(auth, window.initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    // We're always attempting anonymous sign-in for simplicity
+                    await signInAnonymously(auth);
                 } catch (error) {
                     console.error("Error during authentication:", error);
                     if (authStatusElement) {
