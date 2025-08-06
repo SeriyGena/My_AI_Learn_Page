@@ -12,7 +12,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Your web app's Firebase configuration (obtained from Firebase Project Settings)
@@ -45,6 +45,9 @@
             window.setDoc = setDoc;
             window.getDoc = getDoc;
             window.onSnapshot = onSnapshot;
+            window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+            window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+            window.signOut = signOut;
 
         } catch (e) {
             console.error("Firebase initialization failed:", e);
@@ -58,6 +61,9 @@
             window.setDoc = null;
             window.getDoc = null;
             window.onSnapshot = null;
+            window.createUserWithEmailAndPassword = null;
+            window.signInWithEmailAndPassword = null;
+            window.signOut = null;
         }
 
 
@@ -66,17 +72,35 @@
             onAuthStateChanged(auth, async (user) => {
                 const authStatusElement = document.getElementById('auth-status');
                 const userIdDisplayElement = document.getElementById('user-id-display');
+                const authControlsElement = document.getElementById('auth-controls');
 
                 if (user) {
                     console.log("User signed in:", user.uid);
                     window.currentUserId = user.uid; // Make userId available globally
                     if (authStatusElement) {
-                        authStatusElement.textContent = `Signed in as Anonymous User`;
+                        authStatusElement.textContent = `Signed in as: ${user.email || 'Anonymous User'}`;
                         authStatusElement.classList.remove('text-red-500');
                         authStatusElement.classList.add('text-green-600');
                     }
                     if (userIdDisplayElement) {
                         userIdDisplayElement.textContent = `Your User ID: ${user.uid}`; // Display full user ID
+                    }
+                    if (authControlsElement) {
+                        authControlsElement.innerHTML = `
+                            <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Log Out</button>
+                        `;
+                        document.getElementById('logout-button').addEventListener('click', async () => {
+                            try {
+                                await window.signOut(window.firebaseAuth);
+                                console.log("User logged out.");
+                                // Optionally, clear local progress if desired after logout
+                                completedTasks = new Set();
+                                updateTaskCheckboxes();
+                                window.updateProgressChart();
+                            } catch (error) {
+                                console.error("Error logging out:", error);
+                            }
+                        });
                     }
                     // Load completed tasks from Firestore after authentication
                     await window.loadCompletedTasks();
@@ -84,24 +108,56 @@
                 } else {
                     console.log("No user signed in. Attempting anonymous sign-in.");
                     if (authStatusElement) {
-                        authStatusElement.textContent = 'Not Signed In / Log In';
+                        authStatusElement.textContent = 'Not Signed In';
                         authStatusElement.classList.remove('text-green-600');
                         authStatusElement.classList.add('text-red-500');
                     }
                     if (userIdDisplayElement) {
                         userIdDisplayElement.textContent = 'Your User ID: N/A';
                     }
-                    try {
-                        // We're always attempting anonymous sign-in for simplicity
-                        await signInAnonymously(auth);
-                    } catch (error) {
-                        console.error("Error during authentication:", error);
-                        if (authStatusElement) {
-                            authStatusElement.textContent = `Authentication Error: ${error.message}`;
-                            authStatusElement.classList.remove('text-green-600');
-                            authStatusElement.classList.add('text-red-500');
-                        }
+                    if (authControlsElement) {
+                        authControlsElement.innerHTML = `
+                            <input type="email" id="email-input" placeholder="Email" class="p-2 border rounded-md w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">
+                            <input type="password" id="password-input" placeholder="Password" class="p-2 border rounded-md w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">
+                            <button id="login-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto mb-2 sm:mb-0 sm:mr-2">Log In</button>
+                            <button id="signup-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto">Sign Up</button>
+                            <button id="anonymous-login-button" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors w-full sm:w-auto mt-2">Continue Anonymously</button>
+                        `;
+                        document.getElementById('login-button').addEventListener('click', async () => {
+                            const email = document.getElementById('email-input').value;
+                            const password = document.getElementById('password-input').value;
+                            try {
+                                await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
+                                console.log("User logged in with email:", email);
+                            } catch (error) {
+                                console.error("Login error:", error);
+                                authStatusElement.textContent = `Login Error: ${error.message}`;
+                            }
+                        });
+                        document.getElementById('signup-button').addEventListener('click', async () => {
+                            const email = document.getElementById('email-input').value;
+                            const password = document.getElementById('password-input').value;
+                            try {
+                                await window.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+                                console.log("User signed up with email:", email);
+                            } catch (error) {
+                                console.error("Signup error:", error);
+                                authStatusElement.textContent = `Signup Error: ${error.message}`;
+                            }
+                        });
+                        document.getElementById('anonymous-login-button').addEventListener('click', async () => {
+                            try {
+                                await signInAnonymously(auth);
+                                console.log("Continued anonymously.");
+                            } catch (error) {
+                                console.error("Anonymous login error:", error);
+                                authStatusElement.textContent = `Anonymous Login Error: ${error.message}`;
+                            }
+                        });
                     }
+                    // Attempt anonymous sign-in by default if no explicit user is logged in
+                    // This is handled by the onAuthStateChanged callback itself, which will trigger signInAnonymously
+                    // if no user is found. No need for an explicit call here unless we want to force it immediately.
                 }
                 // Hide loading indicator once authentication state is determined and initial data loaded
                 const loadingIndicator = document.getElementById('loading-indicator');
@@ -112,6 +168,8 @@
         } else { // If auth initialization failed
             const authStatusElement = document.getElementById('auth-status');
             const userIdDisplayElement = document.getElementById('user-id-display');
+            const authControlsElement = document.getElementById('auth-controls');
+
             if (authStatusElement) {
                 authStatusElement.textContent = 'Firebase Not Configured / Connection Failed';
                 authStatusElement.classList.remove('text-green-600');
@@ -119,6 +177,11 @@
             }
             if (userIdDisplayElement) {
                 userIdDisplayElement.textContent = 'Your User ID: Not Available';
+            }
+            if (authControlsElement) {
+                authControlsElement.innerHTML = `
+                    <p class="text-red-500 text-sm">Authentication features are unavailable due to Firebase configuration issues.</p>
+                `;
             }
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
@@ -137,6 +200,7 @@
         5. New Feature: Individual Progress Tracking -> Goal: Persist and track checklist status for each unique user -> Presentation: Checkboxes within module tasks, progress charts. -> Interactivity: Checkbox clicks update Firestore for the specific user's document; changes update UI. -> Justification: Addresses user's request for individual, persistent progress.
         6. New Feature: Authentication Status Display & User ID -> Goal: Visually inform user about authentication status and their unique ID -> Presentation: Small text indicator in the header, displaying full user ID. -> Interactivity: Updates dynamically based on Firebase auth state. -> Justification: Clearly shows the user their unique identifier for tracking their own progress.
         7. New Feature: Local Progress Fallback -> Goal: Allow functionality to be seen even without Firebase setup. -> Presentation: Checkbox and chart updates. -> Interactivity: Updates `completedTasks` Set and UI locally. -> Justification: Addresses user's request to preserve functionality visibility without immediate Firestore setup.
+        8. New Feature: Email/Password Authentication -> Goal: Allow users to create accounts and log in for persistent profiles. -> Presentation: Login/Signup form and buttons. -> Interactivity: User input for email/password, Firebase Auth calls. -> Justification: Provides explicit user accounts as requested.
     -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
@@ -189,10 +253,13 @@
 
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Eng. skills for non coder test_02</h1>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Eng. skills for non coder test_03</h1>
             <p class="text-md text-gray-600 mt-2">Your Personal Interactive Learning Plan</p>
             <div id="auth-status" class="text-sm mt-2 font-medium">Loading authentication status...</div>
             <div id="user-id-display" class="text-xs text-gray-500 mt-1">Your User ID: N/A</div>
+            <div id="auth-controls" class="flex flex-col sm:flex-row justify-center items-center mt-4 space-y-2 sm:space-y-0 sm:space-x-2">
+                <!-- Auth controls will be injected here by JavaScript -->
+            </div>
         </header>
 
         <nav class="flex justify-center border-b border-gray-200 mb-8">
@@ -714,4 +781,3 @@
     </script>
 </body>
 </html>
-
