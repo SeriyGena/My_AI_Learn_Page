@@ -487,7 +487,7 @@
                 targetElement.innerHTML = htmlContent;
             } catch (error) {
                 console.error(`Could not load ${filename}:`, error);
-                targetElement.innerHTML = `<p class="text-red-500 text-center">Failed to load content from ${filename}. Please ensure the file exists and is accessible in your GitHub repository's root directory.</p>`;
+                targetElement.innerHTML = `<p class="text-red-500 text-center">Failed to load content from ${filename}. Please ensure the file exists and is accessible in your GitHub repository's root directory or the 'content/' subfolder.</p>`;
             }
         }
 
@@ -568,7 +568,7 @@
             } else if (target === 'info') {
                 attachInfoSubNavListeners();
                 // Load tools.html by default when Info tab is clicked
-                loadExternalContent('tools.html', 'info-sub-content');
+                loadExternalContent('content/tools.html', 'info-sub-content'); // Updated path
             }
         }
 
@@ -727,8 +727,8 @@
                     subNavLinks.forEach(l => l.classList.remove('active'));
                     e.target.classList.add('active');
                     
-                    // Load content based on sub-target
-                    loadExternalContent(`${subTarget}.html`, 'info-sub-content');
+                    // Load content based on sub-target, now with the 'content/' prefix
+                    loadExternalContent(`content/${subTarget}.html`, 'info-sub-content');
                 });
             });
              // Ensure 'tools' is active by default when 'info' tab is rendered
