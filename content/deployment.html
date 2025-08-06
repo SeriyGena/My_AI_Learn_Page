@@ -1,35 +1,97 @@
-<h2 class="text-2xl font-bold mb-6 text-center">Website Deployment</h2>
-<p class="text-center text-gray-600 mb-8">Learn how to host your interactive course plan online for free.</p>
-<div class="space-y-6">
-    <div class="bg-white p-6 rounded-xl shadow-md">
-        <h3 class="text-xl font-semibold mb-3 text-gray-800">1. GitHub Pages 🚀</h3>
-        <p class="text-gray-600 mb-2">A free service from GitHub to host static websites directly from your repository. Ideal for single HTML files.</p>
-        <ul class="list-disc list-inside text-gray-700 space-y-1 mb-4">
-            <li>**Step 1: Save your HTML file.** Save the entire code from this page into a single file named <code class="bg-gray-100 p-1 rounded">index.html</code> on your computer. This name is crucial for GitHub Pages to find your main page automatically.</li>
-            <li>**Step 2: Create a GitHub account.** If you don't have one, sign up at <a href="https://github.com/" target="_blank" class="text-blue-500 hover:underline">github.com</a>.</li>
-            <li>**Step 3: Create a new repository.**
-                <ul class="list-circle list-inside ml-4 mt-1">
-                    <li>Click the "+" icon in the top right corner and select "New repository".</li>
-                    <li>Give it a name (e.g., <code class="bg-gray-100 p-1 rounded">my-ai-course</code>).</li>
-                    <li>Make sure it's **Public**.</li>
-                    <li>Optionally, check "Add a README file".</li>
-                    <li>Click "Create repository".</li>
-                </ul>
-            </li>
-            <li>**Step 4: Upload your <code class="bg-gray-100 p-1 rounded">index.html</code> file.**
-                <ul class="list-circle list-inside ml-4 mt-1">
-                    <li>In your newly created repository, click "Add file" -> "Upload files".</li>
-                    <li>Drag and drop your <code class="bg-gray-100 p-1 rounded">index.html</code> file into the upload area, or click "choose your files" to select it.</li>
-                    <li>Scroll down and click "Commit changes" to save the file to your repository.</li>
-                </ul>
-            </li>
-            <li>**Step 5: Enable GitHub Pages.**
-                <ul class="list-circle list-inside ml-4 mt-1">
-                    <li>Go to the "Settings" tab in your repository.</li>
-                    <li>In the left sidebar, click "Pages".</li>
-                    <li>Under "Build and deployment", for "Source", select the branch where your <code class="bg-gray-100 p-1 rounded">index.html</code> file is located (usually <code class="bg-gray-100 p-1 rounded">main</code>).</li>
-                    <li>Ensure the folder is set to <code class="bg-gray-100 p-1 rounded">/ (root)</code>.</li>
-                    <li>Click "Save".</li>
-                </ul>
-            </li>
-            <li>**Step 6: Get your site link.** GitHub Pages will take a few minutes to build and deploy your site. After it's done, refresh the "Pages" settings. You will see a message like "Your site is live at <code class="bg-gray-100 p-1 rounded">https://&lt;your_username&gt;.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Instructions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        code {
+            background-color: #f3f4f6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-4xl">
+        <div class="bg-white p-6 sm:p-8 rounded-xl shadow-md">
+            <h1 class="text-3xl font-bold text-gray-900 mb-6 border-b pb-4">Website Deployment</h1>
+            <p class="text-gray-600 mb-8">
+                Learn how to host your interactive course plan online for free and configure data persistence.
+            </p>
+
+            <section class="mb-10">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">1. GitHub Pages 🚀</h2>
+                <p class="text-gray-600 mb-6">
+                    A free service from GitHub to host static websites directly from your repository. Ideal for single HTML files.
+                </p>
+                <ol class="list-decimal list-inside space-y-4 text-gray-700">
+                    <li>
+                        <strong>Save your HTML file.</strong> Save the entire code from this page and the other related files (<code>tools.html</code>, <code>resources.html</code>, etc.) into your project folder. The main file must be named <code>index.html</code>.
+                    </li>
+                    <li>
+                        <strong>Create a GitHub account.</strong> If you don't have one, sign up at <a href="https://github.com" target="_blank" class="text-blue-500 hover:underline">github.com</a>.
+                    </li>
+                    <li>
+                        <strong>Create a new repository.</strong> Click the "+" icon in the top right corner and select "New repository". Give it a name (e.g., <code>my-ai-course</code>). Make sure it's <strong>Public</strong>. Click "Create repository".
+                    </li>
+                    <li>
+                        <strong>Upload your project files.</strong> In your newly created repository, click "Add file" -> "Upload files". Drag and drop all your project files and the entire <code>content</code> folder into the upload area. Scroll down and click "Commit changes".
+                    </li>
+                    <li>
+                        <strong>Enable GitHub Pages.</strong> Go to the "Settings" tab in your repository. In the left sidebar, click "Pages". Under "Build and deployment", for "Source", select the branch where your files are located (usually <code>main</code>). Ensure the folder is set to <code>/ (root)</code>. Click "Save".
+                    </li>
+                    <li>
+                        <strong>Get your site link.</strong> GitHub Pages will take a few minutes to build and deploy your site. After it's done, refresh the "Pages" settings. You will see a message like "Your site is live at <code>https://&lt;your_username&gt;.github.io/&lt;your_repo_name&gt;/</code>". This is your shareable link!
+                    </li>
+                </ol>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">2. Firebase Setup (for Progress Saving) 🔐</h2>
+                <p class="text-gray-600 mb-6">
+                    This is the most important step for saving and restoring your progress. It requires a free Google account.
+                </p>
+                <ol class="list-decimal list-inside space-y-4 text-gray-700">
+                    <li>
+                        <strong>Create a Firebase Project.</strong> Go to the <a href="https://console.firebase.google.com/" target="_blank" class="text-blue-500 hover:underline">Firebase Console</a>. Click "Add project" and follow the on-screen instructions. Give your project a name (e.g., "AI Course Tracker"). You don't need Google Analytics for this app.
+                    </li>
+                    <li>
+                        <strong>Register your web app.</strong> In your new project, click the web icon <code>&lt;/&gt;</code> to register a new web app. Give your app a name and click "Register app".
+                    </li>
+                    <li>
+                        <strong>Get your Firebase Config.</strong> After registering, you will see a JavaScript object named <code>firebaseConfig</code>. It contains your unique <code>apiKey</code>, <code>authDomain</code>, and <code>projectId</code>. <strong>Copy the entire <code>firebaseConfig</code> object.</strong>
+                    </li>
+                    <li>
+                        <strong>Update your <code>index.html</code>.</strong> Open your <code>index.html</code> file in a code editor. Find the existing <code>firebaseConfig</code> object in the <code>&lt;script type="module"&gt;</code> tag at the top of the file and replace it with the one you just copied from your Firebase project.
+                    </li>
+                    <li>
+                        <strong>Enable Sign-in Methods.</strong> In the Firebase Console, go to <strong>Authentication</strong> -> <strong>Sign-in method</strong> tab. Enable both <strong>Email/Password</strong> and <strong>Anonymous</strong> providers.
+                    </li>
+                    <li>
+                        <strong>Add Authorized Domain.</strong> While still in Authentication settings, add your GitHub Pages domain to the list of authorized domains (e.g., <code>your-username.github.io</code>).
+                    </li>
+                    <li>
+                        <strong>Set up Firestore Rules.</strong> Go to <strong>Firestore Database</strong> -> <strong>Rules</strong> tab. Replace the default rules with the following to allow authenticated users to access their own data:
+                        <pre class="bg-gray-100 p-4 rounded-md mt-2 text-sm overflow-x-auto"><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /artifacts/{appId}/users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}</code></pre>
+                        Click <strong>Publish</strong>. Your app is now fully configured!
+                    </li>
+                </ol>
+            </section>
+        </div>
+    </div>
+</body>
+</html>
