@@ -247,13 +247,17 @@
 <body class="text-gray-800">
 
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Eng. skills for non coder test_03</h1>
-            <p class="text-md text-gray-600 mt-2">Your Personal Interactive Learning Plan</p>
-            <div id="auth-status" class="text-sm mt-2 font-medium">Loading authentication status...</div>
-            <div id="user-id-display" class="text-xs text-gray-500 mt-1">Your User ID: N/A</div>
-            <div id="auth-controls" class="flex flex-col sm:flex-row justify-center items-center mt-4 space-y-2 sm:space-y-0 sm:space-x-2">
-                <!-- Auth controls will be injected here by JavaScript -->
+        <header class="relative mb-8 flex flex-col items-center">
+            <div class="absolute top-0 right-0 text-right">
+                <div id="auth-status" class="text-sm mt-2 font-medium">Loading authentication status...</div>
+                <div id="user-id-display" class="text-xs text-gray-500 mt-1 hidden">Your User ID: N/A</div>
+                <div id="auth-controls" class="flex flex-col sm:flex-row justify-end items-center mt-4 space-y-2 sm:space-y-0 sm:space-x-2">
+                    <!-- Auth controls will be injected here by JavaScript -->
+                </div>
+            </div>
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Eng. skills for non coder</h1>
+                <p class="text-md text-gray-600 mt-2">Your Personal Interactive Learning Plan</p>
             </div>
         </header>
 
@@ -520,7 +524,7 @@
             `,
             info: `
                 <h2 class="text-2xl font-bold mb-6 text-center">Additional Information</h2>
-                <nav class="flex justify-center border-b border-gray-200 mb-8">
+                <nav id="info-sub-nav" class="flex justify-center border-b border-gray-200 mb-8">
                     <button data-sub-target="tools" class="sub-nav-link active py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🛠️ Tools</button>
                     <button data-sub-target="resources" class="sub-nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🎓 Resources</button>
                     <button data-sub-target="deployment" class="sub-nav-link py-4 px-6 text-sm sm:text-base font-medium text-gray-500 hover:text-green-500">🌐 Deployment</button>
@@ -686,7 +690,12 @@
         }
 
         function attachInfoSubNavListeners() {
-            const subNavLinks = document.querySelectorAll('#info-sub-content').length > 0 ? document.querySelectorAll('#info-sub-content').previousElementSibling.querySelectorAll('.sub-nav-link') : [];
+            const infoSubNav = document.getElementById('info-sub-nav'); // Get the sub-navigation container
+            if (!infoSubNav) {
+                console.error("Info sub-navigation container not found.");
+                return;
+            }
+            const subNavLinks = infoSubNav.querySelectorAll('.sub-nav-link');
             
             subNavLinks.forEach(link => {
                 link.addEventListener('click', (e) => {
@@ -699,6 +708,11 @@
                     loadExternalContent(`${subTarget}.html`, 'info-sub-content');
                 });
             });
+             // Ensure 'tools' is active by default when 'info' tab is rendered
+            const defaultSubTab = infoSubNav.querySelector('[data-sub-target="tools"]');
+            if (defaultSubTab) {
+                defaultSubTab.classList.add('active');
+            }
         }
 
 
